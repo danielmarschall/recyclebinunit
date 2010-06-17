@@ -1,0 +1,101 @@
+Windows 95
+PurgeInfo Interpretation Theorety
+by Daniel Marschall
+
+= Locality =
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\BitBucket: PurgeInfo (Binary)
+
+= Data structure =
+
+Offset	00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+Data	48 00 00 00 01 00 00 00 0A 00 0A 00 0A 00 0A 00
+Sign	?? ?? ?? ?? GS ?? ?? ?? Pa ?? Pb ?? Pc ?? Pd ??
+
+Offset	10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
+Data	0A 00 0A 00 0A 00 0A 00 0A 00 0A 00 0A 00 0A 00
+Sign	Pe ?? Pf ?? Pg ?? Ph ?? Pi ?? Pj ?? Pk ?? Pl ??
+
+Offset	20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f
+Data	0A 00 0A 00 0A 00 0A 00 0A 00 0A 00 0A 00 0A 00
+Sign	Pm ?? Pn ?? Po ?? Pp ?? Pq ?? Pr ?? Ps ?? Pt ??
+
+Offset	30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f
+Data	0A 00 0A 00 0A 00 0A 00 0A 00 0A 00 0A 00 0A 00
+Sign	Pu ?? Pv ?? Pw ?? Px ?? Py ?? Pz ?? ?? ?? PG ??
+
+Offset	40 41 42 43 44 45 46 47
+Data	00 00 00 00 04 0D 02 00
+Sign	N1 N2 N3 N4 ?? ?? ?? ??
+
+= Legend =
+
+GS
+	Global settings
+	0x00 = Individual settings for every drive
+	0x01 = Global settings for all drives
+
+Pa..Pz
+	Percentage of the drive A..Z
+	0x00 = 0%
+	0x64 = 100%
+
+PG
+	Percentage of all drives (Global setting)
+	0x00 = 0%
+	0x64 = 100%
+
+N1
+	"Nuke on delete" setting in a bitmask (7..0)
+	Bit 0 = Flag for device A
+	Bit 1 = Flag for device B
+	Bit 2 = Flag for device C
+	Bit 3 = Flag for device D
+	Bit 4 = Flag for device E
+	Bit 5 = Flag for device F
+	Bit 6 = Flag for device G
+	Bit 7 = Flag for device H
+
+N2
+	"Nuke on delete" setting in a bitmask (7..0)
+	Bit 0 = Flag for device I
+	Bit 1 = Flag for device J
+	Bit 2 = Flag for device K
+	Bit 3 = Flag for device L
+	Bit 4 = Flag for device M
+	Bit 5 = Flag for device N
+	Bit 6 = Flag for device O
+	Bit 7 = Flag for device P
+
+N3
+	"Nuke on delete" setting in a bitmask (7..0)
+	Bit 0 = Flag for device Q
+	Bit 1 = Flag for device R
+	Bit 2 = Flag for device S
+	Bit 3 = Flag for device T
+	Bit 4 = Flag for device U
+	Bit 5 = Flag for device V
+	Bit 6 = Flag for device W
+	Bit 7 = Flag for device X
+
+N4
+	"Nuke on delete" setting in a bitmask (7..0)
+	Bit 0 = Flag for device Y
+	Bit 1 = Flag for device Z
+	Bit 2 = Unknown
+	Bit 3 = Flag for global setting
+	Bit 4 = Unknown
+	Bit 5 = Unknown
+	Bit 6 = Unknown
+	Bit 7 = Unknown
+
+= Already confirmed =
+
+Checked with Windows 95b with 1 FAT32 drive.
+
+The functionality of following bytes was confirmed:
+- GS: Global settings
+- Pc: Percentage of drive C
+- PG: Percentage of global configuration
+- N1: Value 0x04 (0000 0100) and 0x00 (0000 0000) for changes at drive C
+- N4: Value 0x08 (0000 1000) and 0x00 (0000 0000) for changes at the global configuration

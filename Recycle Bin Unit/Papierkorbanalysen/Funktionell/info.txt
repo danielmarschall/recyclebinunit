@@ -1,0 +1,14 @@
+Win95
+C:\Recycled\INFO
+enthält 2 Dateien und einen Ordner (der 1 Datei enthielt)
+
+Win95 mit IE4-Erweiterung
+C:\Recycled\INFO2
+Die obrige Datei migriert
+
+Win95 mit IE4-Erweiterung
+C:\Recycled\INFO2
+Die obrige Datei migriert und es wurde nochmals ein Ordner hinzugefügt (der nicht aufgelösst wurde)
+
+Win2000
+C:\Recycled\INFO2

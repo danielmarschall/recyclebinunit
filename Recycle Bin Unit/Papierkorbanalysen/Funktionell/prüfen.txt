@@ -1,0 +1,3 @@
+w95 nativ: wenn papierkorb leer, dann ist weder info noch info2 vorhanden
+win2000: speichert in recycled, wenn win95 bereits installiert?
+win95 nativ + win2000: info und info2 existieren gleichzeitig

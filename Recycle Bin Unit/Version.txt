@@ -1,0 +1,15 @@
+= Current version =
+
+2010-06-16
+
+= Changelog =
+
+2010-06-16
+
++ Windows 95 compatibility
+  API function call is now dynamic
+
+2010-06-14
+
++ Windows 2003 Server Edition now supported.
+  Uses now API functions for ShellState structure.

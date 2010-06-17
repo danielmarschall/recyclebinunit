@@ -1,0 +1,24 @@
+PROBLEME BEI W2000 <-> W95 INTERAKTION
+
+w95ie4: eine datei in den papierkorb
+(!) win2000: papierkorb ist voll, allerdings keine datei zu sehen
+w2000: eine datei in den papierkorb
+info2 enthält nun beide dateien
+(!) win2000: papierkorb ist voll, allerdings keine datei zu sehen
+(!) win95ie4: nur noch die 2000 datei ist zu sehen
+
+---
+
+w2000: eine datei in den papierkorb
+(!) win95ie4: papierkorb ist voll, allerdings keine datei zu sehen
+win95ie4: eine datei in den papierkorb
+win95ie4: die win95 datei wird gesehen
+(!) w2000 datei wurde aus info2 gelöscht!
+
+---
+
+w2000: eine datei in den papierkorb
+w95 (ohne ie4): papierkorb löschen
+w2000: alles wurde gelöscht
+
+---
