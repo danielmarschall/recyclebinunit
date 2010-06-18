@@ -2138,10 +2138,8 @@ begin
     try
       // API function call failed. Probably because Windows is too old.
       // Try to read out from registry.
-      // Warning: This method may be unsafe. In newer Windows versions
-      // (Windows 2003 and higher) the 3rd bit of byte #5 seems to have
-      // toggled in its behavior!! But for these newer Windows versions, our
-      // API function should always be available.
+      // The 3rd bit of the 5th byte of "ShellState" is the value
+      // of "fNoConfirmRecycle".
 
       reg.RootKey := HKEY_CURRENT_USER;
       if (reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Explorer')) then
@@ -2217,10 +2215,8 @@ begin
     try
       // API function call failed. Probably because Windows is too old.
       // Try to read out from registry.
-      // Warning: This method may be unsafe. In newer Windows versions
-      // (Windows 2003 and higher) the 3rd bit of byte #5 seems to have
-      // toggled in its behavior!! But for these newer Windows versions, our
-      // API function should always be available.
+      // The 3rd bit of the 5th byte of "ShellState" is the value
+      // of "fNoConfirmRecycle".
 
       reg.RootKey := HKEY_CURRENT_USER;
       if (reg.OpenKey('Software\Microsoft\Windows\CurrentVersion\Explorer', false)) then

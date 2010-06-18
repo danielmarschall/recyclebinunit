@@ -31,11 +31,16 @@ ShGetSettings:	OK
 
 Windows 2003 Server EE, SP1
 ShGetSettings:	OK
-[ ]	3Ah	0 0 1 1 1[0]1 0
-[X]	3Eh	0 0 1 1 1[1]1 0
+[ ]	3Eh	0 0 1 1 1[1]1 0
+[X]	3Ah	0 0 1 1 1[0]1 0
 [X]1st	33h	0 0 1 1 0[0]1 1
 
+---
+
+Unknown sources:
+
 http://www.msfn.org/board/single-shellstate-disable-recycle-delete-conf-t122649.html
+(!) If this is true, the behavior of the 3rd bit seems to have toggled (which I do not believe)
 [ ]	2Ah	0 0 1 0 1[0]1 0
 [X]	2Eh	0 0 1 0 1[1]1 0
 
