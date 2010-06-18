@@ -54,10 +54,10 @@ beachtet? bei leerem papierkorb auf fat ist weder info noch info2 vorhanden?
 testen: auch möglich, einen vista papierkorb offline öffnen?
 Problem: bei win95(ohne ie4) und win2000 gleichzeitiger installation: es existiert info UND info2!!!
 Neue Funktionen: GetCurrentRecyclerIcon, GetFullIcon, GetEmptyIcon
-Bei Vista gibt es manchmal einen c0000013 Fehler. (Auslesen des ganzen Papierkorbs)
 Windows 7 miteinbeziehen!
 Implement SETTER functions to every kind of configuration thing. (percentage etc)
 Registry CURRENT_USER: Funktionen auch für fremde Benutzer zur Verfügung stellen?
+Es sollte möglich sein, dass ein Laufwerk mehr als 1 Recycler beinhaltet -- behandeln
 
 - Future -
 
@@ -1577,6 +1577,12 @@ end;
 
 function RecyclerIsValid(drive: char): boolean; overload;
 begin
+  // Bei Vista und W2k3 (VM) erhalte ich bei LW A: die Meldung
+  // "c0000013 Kein Datenträger". Exception Abfangen geht nicht.
+  // Daher erstmal überprüfen, ob Laufwerk existiert.
+  result := false;
+  if not RecyclerIsPossible(drive) then exit;
+
   result := RecyclerIsValid(drive, '');
 end;
 
@@ -1584,6 +1590,10 @@ function RecyclerIsValid(drive: char; UserSID: string): boolean; overload;
 var
   infofile: string;
 begin
+  // Anmerkung siehe oben.
+  result := false;
+  if not RecyclerIsPossible(drive) then exit;
+
   infofile := RecyclerGetPath(drive, UserSID, false);
   result := RecyclerIsValid(infofile);
 end;

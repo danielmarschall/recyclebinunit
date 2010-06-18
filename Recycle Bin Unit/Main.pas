@@ -258,6 +258,15 @@ begin
     end;
 
     outputMemo.Lines.Add('');
+    outputMemo.Lines.Add('= Valid recyclers =');
+    outputMemo.Lines.Add('');
+
+    for d := 'A' to 'Z' do
+    begin
+      outputMemo.Lines.Add('Drive '+d+': ' + _BoolToYesNo(RecyclerIsValid(d)));
+    end;
+
+    outputMemo.Lines.Add('');
     outputMemo.Lines.Add('= Current status =');
     outputMemo.Lines.Add('');
 
