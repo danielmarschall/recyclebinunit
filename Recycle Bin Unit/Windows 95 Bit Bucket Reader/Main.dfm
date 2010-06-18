@@ -1,4 +1,4 @@
-object Form1: TForm1
+object MainForm: TMainForm
   Left = 204
   Top = 143
   Width = 659
@@ -7,17 +7,17 @@ object Form1: TForm1
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -14
+  Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  PixelsPerInch = 120
-  TextHeight = 16
+  PixelsPerInch = 96
+  TextHeight = 13
   object Splitter1: TSplitter
     Left = 0
-    Top = 193
+    Top = 253
     Width = 651
-    Height = 5
+    Height = 4
     Cursor = crVSplit
     Align = alBottom
   end
@@ -25,11 +25,11 @@ object Form1: TForm1
     Left = 0
     Top = 0
     Width = 651
-    Height = 193
+    Height = 253
     Align = alClient
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -25
+    Font.Height = -20
     Font.Name = 'Courier'
     Font.Style = []
     ParentFont = False
@@ -39,9 +39,9 @@ object Form1: TForm1
   end
   object Memo2: TMemo
     Left = 0
-    Top = 198
+    Top = 257
     Width = 651
-    Height = 248
+    Height = 201
     Align = alBottom
     ReadOnly = True
     ScrollBars = ssVertical

@@ -1,8 +1,12 @@
 = Current version =
 
-2010-06-16
+2010-06-18
 
 = Changelog =
+
+2010-06-18
+
++ Added 3 group policy getters and modified the auto-determinate-getters
 
 2010-06-16
 

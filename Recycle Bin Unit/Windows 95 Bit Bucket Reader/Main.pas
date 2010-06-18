@@ -1,4 +1,4 @@
-unit Unit1;
+unit Main;
 
 interface
 
@@ -7,7 +7,7 @@ uses
   Dialogs, StdCtrls, registry, ExtCtrls;
 
 type
-  TForm1 = class(TForm)
+  TMainForm = class(TForm)
     Memo1: TMemo;
     Timer1: TTimer;
     Memo2: TMemo;
@@ -18,7 +18,7 @@ type
   end;
 
 var
-  Form1: TForm1;
+  MainForm: TMainForm;
 
 implementation
 
@@ -27,7 +27,7 @@ implementation
 uses
   Functions;
 
-procedure TForm1.GetDump;
+procedure TMainForm.GetDump;
 var
   reg: tregistry;
   i: integer;
@@ -72,7 +72,7 @@ begin
   end;
 end;
 
-procedure TForm1.Timer1Timer(Sender: TObject);
+procedure TMainForm.Timer1Timer(Sender: TObject);
 begin
   GetDump;
 end;

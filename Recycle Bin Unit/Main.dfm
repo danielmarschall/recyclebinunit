@@ -112,7 +112,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 81
     Width = 644
-    Height = 381
+    Height = 387
     Align = alClient
     Caption = 'Please wait...'
     Font.Charset = DEFAULT_CHARSET
@@ -126,7 +126,7 @@ object MainForm: TMainForm
       Left = 1
       Top = 1
       Width = 642
-      Height = 379
+      Height = 385
       Align = alClient
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText

@@ -319,29 +319,35 @@ begin
     outputMemo.Lines.Add('= Nuke on Delete =');
     outputMemo.Lines.Add('');
 
-    outputMemo.Lines.Add('Global settings selected: ' + _BoolToEnabledDisabled(RecyclerHasGlobalSettings));
+    outputMemo.Lines.Add('Group policy setting: ' + GPBoolToString(RecyclerGroupPolicyNoRecycleFiles));
+    outputMemo.Lines.Add('Global settings selected: ' + _BoolToYesNo(RecyclerHasGlobalSettings));
     outputMemo.Lines.Add('Global setting: ' + _BoolToEnabledDisabled(RecyclerGlobalIsNukeOnDelete()));
     for d := 'A' to 'Z' do
     begin
-      outputMemo.Lines.Add('Setting for drive '+d+': ' + _BoolToEnabledDisabled(RecyclerSpecificIsNukeOnDelete(d)));
+      outputMemo.Lines.Add('Individual setting for drive '+d+': ' + _BoolToEnabledDisabled(RecyclerSpecificIsNukeOnDelete(d)));
+      outputMemo.Lines.Add('Auto determinated setting for drive '+d+' (includes group policy and global setting): ' + _BoolToEnabledDisabled(RecyclerIsNukeOnDeleteAutoDeterminate(d)));
     end;
 
     outputMemo.Lines.Add('');
     outputMemo.Lines.Add('= Usage Percent =');
     outputMemo.Lines.Add('');
 
-    outputMemo.Lines.Add('Global settings selected: ' + _BoolToEnabledDisabled(RecyclerHasGlobalSettings));
+    outputMemo.Lines.Add('Group policy setting: ' + IntToStr(RecyclerGroupPolicyRecycleBinSize));
+    outputMemo.Lines.Add('Global settings selected: ' + _BoolToYesNo(RecyclerHasGlobalSettings));
     outputMemo.Lines.Add('Global setting: ' + IntToStr(RecyclerGlobalGetPercentUsage()));
     for d := 'A' to 'Z' do
     begin
       outputMemo.Lines.Add('Setting for drive '+d+': ' + IntToStr(RecyclerSpecificGetPercentUsage(d)));
+      outputMemo.Lines.Add('Auto determinated setting for drive '+d+' (includes global setting and global setting): ' + IntToStr(RecyclerGetPercentUsageAutoDeterminate(d)));
     end;
 
     outputMemo.Lines.Add('');
     outputMemo.Lines.Add('= Confirmation Dialog =');
     outputMemo.Lines.Add('');
 
-    outputMemo.Lines.Add('Setting: ' + _BoolToEnabledDisabled(RecyclerConfirmationDialogEnabled()));
+    outputMemo.Lines.Add('Setting in Shell: ' + _BoolToEnabledDisabled(RecyclerShellStateConfirmationDialogEnabled()));
+    outputMemo.Lines.Add('Setting in Group Policy: ' + GPBoolToString(RecyclerGroupPolicyConfirmFileDelete()));
+    outputMemo.Lines.Add('Resulting Setting (Group policy before Shell): ' + _BoolToEnabledDisabled(RecyclerConfirmationDialogEnabled()));
   finally
     outputMemo.Visible := true;
   end;

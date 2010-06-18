@@ -3,7 +3,7 @@
 // E-MAIL: info@daniel-marschall.de                                               //
 // WEB:    www.daniel-marschall.de                                                //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 16 JUN 2010                                                          //
+// Revision: 18 JUN 2010                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successful tested with:                                                        //
@@ -131,6 +131,8 @@ type
     i64NumItems : int64;
   end;
 
+  GPOLICYBOOL = (gpUndefined, gpEnabled, gpDisabled);
+
 const
   RECYCLER_CLSID = '{645FF040-5081-101B-9F08-00AA002F954E}';
 
@@ -203,6 +205,7 @@ function RecyclerAddFileOrFolder(FileOrFolder: string; confirmation: boolean): b
 function RecyclerAddFileOrFolder(FileOrFolder: string): boolean; overload;
 
 function RecyclerConfirmationDialogEnabled: boolean;
+function RecyclerShellStateConfirmationDialogEnabled: boolean;
 procedure RecyclerConfirmationDialogSetEnabled(NewSetting: boolean);
 
 function RecyclerGetCurrentIconString: string;
@@ -253,6 +256,12 @@ function RecyclerGetCLSID: string;
 // - RecyclerGetSize
 // - RecyclerGetAPIInfo
 function RecyclerQueryFunctionAvailable: boolean;
+
+function RecyclerGroupPolicyNoRecycleFiles: GPOLICYBOOL;
+function RecyclerGroupPolicyConfirmFileDelete: GPOLICYBOOL;
+function RecyclerGroupPolicyRecycleBinSize: integer;
+
+function GPBoolToString(value: GPOLICYBOOL): String;
 
 function RecyclerLibraryVersion: string;
 
@@ -2095,6 +2104,21 @@ begin
 end;
 
 function RecyclerConfirmationDialogEnabled: boolean;
+var
+  gp: GPOLICYBOOL;
+begin
+  gp := RecyclerGroupPolicyConfirmFileDelete;
+  if gp <> gpUndefined then
+  begin
+    result := gp = gpEnabled;
+  end
+  else
+  begin
+    result := RecyclerShellStateConfirmationDialogEnabled;
+  end;
+end;
+
+function RecyclerShellStateConfirmationDialogEnabled: boolean;
 type
   TSHGetSettings = procedure (var lpss: SHELLSTATE; dwMask: DWORD) stdcall;
 const
@@ -2562,8 +2586,13 @@ begin
 end;
 
 function RecyclerGetPercentUsageAutoDeterminate(Drive: Char): integer;
+var
+  gpSetting: integer;
 begin
-  if RecyclerHasGlobalSettings then
+  gpSetting := RecyclerGroupPolicyRecycleBinSize;
+  if gpSetting <> -1 then
+    result := gpSetting
+  else if RecyclerHasGlobalSettings then
     result := RecyclerGlobalGetPercentUsage
   else
     result := RecyclerSpecificGetPercentUsage(Drive);
@@ -2681,7 +2710,9 @@ end;
 
 function RecyclerIsNukeOnDeleteAutoDeterminate(Drive: Char): boolean;
 begin
-  if RecyclerHasGlobalSettings then
+  if RecyclerGroupPolicyNoRecycleFiles = gpEnabled then
+    result := true
+  else if RecyclerHasGlobalSettings then
     result := RecyclerGlobalIsNukeOnDelete
   else
     result := RecyclerSpecificIsNukeOnDelete(Drive);
@@ -2844,7 +2875,7 @@ begin
   result := RECYCLER_CLSID;
 end;
 
-// Windows 95 without Internet Explorer 4 has not SHQueryRecycleBinA.
+// Windows 95 without Internet Explorer 4 has no SHQueryRecycleBinA.
 function RecyclerQueryFunctionAvailable: boolean;
 var
   RBHandle: THandle;
@@ -2864,9 +2895,150 @@ begin
   result := RBHandle <> 0;
 end;
 
+const
+  GroupPolicyAcceptHKLMTrick = true;
+
+// TODO: In future also detect for other users
+// TODO: Also make a setter (inkl. Message to Windows Explorer?)
+function RecyclerGroupPolicyNoRecycleFiles: GPOLICYBOOL;
+var
+  reg: TRegistry;
+begin
+  result := gpUndefined;
+
+  reg := TRegistry.Create;
+  try
+    // If a value is set in HKEY_LOCAL_MACHINE, it will be prefered,
+    // even if gpedit.msc shows "Not configured"!
+    if GroupPolicyAcceptHKLMTrick then
+    begin
+      reg.RootKey := HKEY_LOCAL_MACHINE;
+      if reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') then
+      begin
+        if reg.ValueExists('NoRecycleFiles') then
+        begin
+          if reg.ReadBool('NoRecycleFiles') then
+            result := gpEnabled
+          else
+            result := gpDisabled;
+          Exit;
+        end;
+        reg.CloseKey;
+      end;
+    end;
+
+    reg.RootKey := HKEY_CURRENT_USER;
+    if reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') then
+    begin
+      if reg.ValueExists('NoRecycleFiles') then
+      begin
+        if reg.ReadBool('NoRecycleFiles') then
+          result := gpEnabled
+        else
+          result := gpDisabled;
+      end;
+      reg.CloseKey;
+    end;
+  finally
+    reg.Free;
+  end;
+end;
+
+// TODO: In future also detect for other users
+// TODO: Also make a setter (inkl. Message to Windows Explorer?)
+function RecyclerGroupPolicyConfirmFileDelete: GPOLICYBOOL;
+var
+  reg: TRegistry;
+begin
+  result := gpUndefined;
+  reg := TRegistry.Create;
+  try
+    // If a value is set in HKEY_LOCAL_MACHINE, it will be prefered,
+    // even if gpedit.msc shows "Not configured"!
+    if GroupPolicyAcceptHKLMTrick then
+    begin
+      reg.RootKey := HKEY_LOCAL_MACHINE;
+      if reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') then
+      begin
+        if reg.ValueExists('ConfirmFileDelete') then
+        begin
+          if reg.ReadBool('ConfirmFileDelete') then
+            result := gpEnabled
+          else
+            result := gpDisabled;
+          Exit;
+        end;
+        reg.CloseKey;
+      end;
+    end;
+
+    reg.RootKey := HKEY_CURRENT_USER;
+    if reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') then
+    begin
+      if reg.ValueExists('ConfirmFileDelete') then
+      begin
+        if reg.ReadBool('ConfirmFileDelete') then
+          result := gpEnabled
+        else
+          result := gpDisabled;
+      end;
+      reg.CloseKey;
+    end;
+  finally
+    reg.Free;
+  end;
+end;
+
+
+// TODO: In future also detect for other users
+// TODO: Also make a setter (inkl. Message to Windows Explorer?)
+function RecyclerGroupPolicyRecycleBinSize: integer;
+var
+  reg: TRegistry;
+begin
+  result := -1;
+  reg := TRegistry.Create;
+  try
+    // If a value is set in HKEY_LOCAL_MACHINE, it will be prefered,
+    // even if gpedit.msc shows "Not configured"!
+    if GroupPolicyAcceptHKLMTrick then
+    begin
+      reg.RootKey := HKEY_LOCAL_MACHINE;
+      if reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') then
+      begin
+        if reg.ValueExists('RecycleBinSize') then
+        begin
+          result := reg.ReadInteger('RecycleBinSize');
+          Exit;
+        end;
+        reg.CloseKey;
+      end;
+    end;
+
+    reg.RootKey := HKEY_CURRENT_USER;
+    if reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') then
+    begin
+      if reg.ValueExists('RecycleBinSize') then
+        result := reg.ReadInteger('RecycleBinSize');
+      reg.CloseKey;
+    end;
+  finally
+    reg.Free;
+  end;
+end;
+
+function GPBoolToString(value: GPOLICYBOOL): String;
+begin
+  case value of
+    gpUndefined: result := 'Not configured';
+    gpEnabled: result := 'Enabled';
+    gpDisabled: result := 'Disabled';
+  end;
+end;
+
 function RecyclerLibraryVersion: string;
 begin
-  result := 'ViaThinkSoft Recycle Bin Unit [16 JUN 2010]';
+  result := 'ViaThinkSoft Recycle Bin Unit [18 JUN 2010]';
 end;
 
 end.
