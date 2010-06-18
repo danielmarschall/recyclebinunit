@@ -2226,10 +2226,9 @@ begin
     lpss.Flags1 := SetByteBit(lpss.Flags1, 2, NewSetting);
     PSHGetSetSettings(lpss, SSF_NOCONFIRMRECYCLE, true); // Set
 
-    // TODO: Do we need a WM_SETTINGCHANGE message to send?
     SendMessageTimeout (
       HWND_BROADCAST, WM_SETTINGCHANGE,
-      0, lParam (pChar ('Environment')),
+      0, lParam (pChar ('ShellState')),
       SMTO_ABORTIFHUNG, 5000, dwResult
     );
   end
@@ -2250,10 +2249,9 @@ begin
         rbuf[4] := SetByteBit(rbuf[4], 2, NewSetting);
         reg.WriteBinaryData('ShellState', rbuf, SizeOf(rbuf)); // Set
 
-        // TODO: Check if that's OK...
         SendMessageTimeout (
           HWND_BROADCAST, WM_SETTINGCHANGE,
-          0, lParam (pChar ('Environment')),
+          0, lParam (pChar ('ShellState')),
           SMTO_ABORTIFHUNG, 5000, dwResult
         );
 
