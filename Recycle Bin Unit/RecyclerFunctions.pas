@@ -61,7 +61,7 @@ Registry CURRENT_USER: Funktionen auch für fremde Benutzer zur Verfügung stellen
 
 - Future -
 
-Demoapplikation: Dateien statt als Text als Explorer-Like?
+Demoapplikation: Dateien statt Text als Explorer-Like?
 Einzelne Elemente oder alle wiederherstellen oder löschen
 Konfiguration für Laufwerke ändern etc
 IconString -> TIcon Convertion functions
@@ -3019,7 +3019,9 @@ begin
     if reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') then
     begin
       if reg.ValueExists('RecycleBinSize') then
+      begin
         result := reg.ReadInteger('RecycleBinSize');
+      end;
       reg.CloseKey;
     end;
   finally
