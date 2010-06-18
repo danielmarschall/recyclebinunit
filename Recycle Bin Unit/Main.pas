@@ -338,7 +338,7 @@ begin
     for d := 'A' to 'Z' do
     begin
       outputMemo.Lines.Add('Setting for drive '+d+': ' + IntToStr(RecyclerSpecificGetPercentUsage(d)));
-      outputMemo.Lines.Add('Auto determinated setting for drive '+d+' (includes global setting and global setting): ' + IntToStr(RecyclerGetPercentUsageAutoDeterminate(d)));
+      outputMemo.Lines.Add('Auto determinated setting for drive '+d+' (includes group policy and global setting): ' + IntToStr(RecyclerGetPercentUsageAutoDeterminate(d)));
     end;
 
     outputMemo.Lines.Add('');
