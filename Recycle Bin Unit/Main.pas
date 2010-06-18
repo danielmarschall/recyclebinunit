@@ -249,6 +249,15 @@ begin
     outputMemo.Lines.Add(RecyclerLibraryVersion);
 
     outputMemo.Lines.Add('');
+    outputMemo.Lines.Add('= Possible recyclers (fixed drives) =');
+    outputMemo.Lines.Add('');
+
+    for d := 'A' to 'Z' do
+    begin
+      outputMemo.Lines.Add('Recycler is possible at drive '+d+': ' + _BoolToYesNo(RecyclerIsPossible(d)));
+    end;
+
+    outputMemo.Lines.Add('');
     outputMemo.Lines.Add('= Current status =');
     outputMemo.Lines.Add('');
 
@@ -259,6 +268,7 @@ begin
       outputMemo.Lines.Add('GLOBAL Size = ' + IntToStr(RecyclerGetSize) + ' Bytes');
       for d := 'A' to 'Z' do
       begin
+        // if not RecyclerIsPossible(d) then Continue;
         outputMemo.Lines.Add('Drive '+d+' Empty = ' + _BoolToYesNo(RecyclerIsEmpty(d)));
         outputMemo.Lines.Add('Drive '+d+' Number of items = ' + IntToStr(RecyclerGetNumItems(d)));
         outputMemo.Lines.Add('Drive '+d+' Size = ' + IntToStr(RecyclerGetSize(d)) + ' Bytes');
@@ -324,6 +334,7 @@ begin
     outputMemo.Lines.Add('Global setting: ' + _BoolToEnabledDisabled(RecyclerGlobalIsNukeOnDelete()));
     for d := 'A' to 'Z' do
     begin
+      // if not RecyclerIsPossible(d) then Continue;
       outputMemo.Lines.Add('Individual setting for drive '+d+': ' + _BoolToEnabledDisabled(RecyclerSpecificIsNukeOnDelete(d)));
       outputMemo.Lines.Add('Auto determinated setting for drive '+d+' (includes group policy and global setting): ' + _BoolToEnabledDisabled(RecyclerIsNukeOnDeleteAutoDeterminate(d)));
     end;
@@ -337,6 +348,7 @@ begin
     outputMemo.Lines.Add('Global setting: ' + IntToStr(RecyclerGlobalGetPercentUsage()));
     for d := 'A' to 'Z' do
     begin
+      // if not RecyclerIsPossible(d) then Continue;
       outputMemo.Lines.Add('Setting for drive '+d+': ' + IntToStr(RecyclerSpecificGetPercentUsage(d)));
       outputMemo.Lines.Add('Auto determinated setting for drive '+d+' (includes group policy and global setting): ' + IntToStr(RecyclerGetPercentUsageAutoDeterminate(d)));
     end;

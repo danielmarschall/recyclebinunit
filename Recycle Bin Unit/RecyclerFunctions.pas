@@ -263,6 +263,8 @@ function RecyclerGroupPolicyRecycleBinSize: integer;
 
 function GPBoolToString(value: GPOLICYBOOL): String;
 
+function RecyclerIsPossible(Drive: Char): boolean;
+
 function RecyclerLibraryVersion: string;
 
 implementation
@@ -3034,6 +3036,14 @@ begin
     gpEnabled: result := 'Enabled';
     gpDisabled: result := 'Disabled';
   end;
+end;
+
+function RecyclerIsPossible(Drive: Char): boolean;
+var
+  typ: Integer;
+begin
+  typ := GetDriveType(PChar(Drive + ':\'));
+  result := typ = DRIVE_FIXED;
 end;
 
 function RecyclerLibraryVersion: string;
