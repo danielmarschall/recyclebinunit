@@ -771,7 +771,7 @@ end; *)
 
 // http://www.delphipages.com/tips/thread.cfm?ID=294
 // Changed
-function _isVista: boolean;
+function _isVistaOrHigher: boolean;
 var
   OS: TOSVersionInfo;
 begin
@@ -779,8 +779,8 @@ begin
   OS.dwOSVersionInfoSize := SizeOf(OS);
   GetVersionEx(OS);
   // http://www.gaijin.at/lstwinver.php
-  Result := (OS.dwMajorVersion = 6) and (OS.dwMinorVersion = 0) and
-            (OS.dwPlatformId=VER_PLATFORM_WIN32_NT);
+  Result := (OS.dwMajorVersion >= 6) (* and (OS.dwMinorVersion >= 0) *) and
+            (OS.dwPlatformId = VER_PLATFORM_WIN32_NT);
 end;
 
 // **********************************************************
@@ -1825,7 +1825,7 @@ var
 begin
   (* if Win32Platform = VER_PLATFORM_WIN32_NT then
   begin *)
-    if _isVista() then
+    if _isVistaOrHigher() then
     begin
       if _isFAT(drive) then
       begin
