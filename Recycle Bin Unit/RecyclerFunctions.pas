@@ -3,7 +3,7 @@
 // E-MAIL: info@daniel-marschall.de                                               //
 // WEB:    www.daniel-marschall.de                                                //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 04 JUL 2010                                                          //
+// Revision: 05 JUL 2010                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successful tested with:                                                        //
@@ -43,8 +43,6 @@
 (*
 
 == TODO LISTE ==
-
-WINDOWS 7 COMPATIBILITY: No VALID recyclers found!
 
 Wichtig! Windows XP: InfoTip, IntroText und LocalizedString sind Resourcenangaben und müssen ausgelesen werden!
 Testen: Wie reagiert Windows, wenn Bitbucket\C existiert, aber kein Wert 'Percent' hat? Mit der Standardeinstellung?
@@ -115,8 +113,7 @@ interface
 uses
   Windows, SysUtils, Classes, {$IFDEF DEL6UP}DateUtils,{$ENDIF}
   ShellApi{$IFNDEF DEL6UP}, FileCtrl{$ENDIF}, Registry,
-  Messages, BitOps,
-  Dialogs;
+  Messages, BitOps;
 
 type
   EUnknownState = class(Exception);
@@ -753,34 +750,6 @@ begin
       SizeOf(VolumeName), nil, Dummy2, Dummy3, FileSystem, SizeOf(FileSystem));
     result := uppercase(copy(FileSystem, 0, 3)) = 'FAT';
   end;
-end;
-
-// http://www.delphipages.com/tips/thread.cfm?ID=294
-// Changed
-(* function IsWin95: boolean;
-var
-  OS: TOSVersionInfo;
-begin
-  ZeroMemory(@OS, SizeOf(OS));
-  OS.dwOSVersionInfoSize := SizeOf(OS);
-  GetVersionEx(OS);
-  // http://www.gaijin.at/lstwinver.php
-  Result := (OS.dwMajorVersion = 4) and (OS.dwMinorVersion <= 3) and
-            (OS.dwPlatformId=VER_PLATFORM_WIN32_WINDOWS);
-end; *)
-
-// http://www.delphipages.com/tips/thread.cfm?ID=294
-// Changed
-function _isVistaOrHigher: boolean;
-var
-  OS: TOSVersionInfo;
-begin
-  ZeroMemory(@OS, SizeOf(OS));
-  OS.dwOSVersionInfoSize := SizeOf(OS);
-  GetVersionEx(OS);
-  // http://www.gaijin.at/lstwinver.php
-  Result := (OS.dwMajorVersion >= 6) (* and (OS.dwMinorVersion >= 0) *) and
-            (OS.dwPlatformId = VER_PLATFORM_WIN32_NT);
 end;
 
 // **********************************************************
@@ -1573,11 +1542,8 @@ begin
   // Bei Vista und W2k3 (VM) erhalte ich bei LW A: die Meldung
   // "c0000013 Kein Datenträger". Exception Abfangen geht nicht.
   // Daher erstmal überprüfen, ob Laufwerk existiert.
-  ShowMessage('Is Valid? ' + drive);
   result := false;
-  ShowMessage('A');
   if not RecyclerIsPossible(drive) then exit;
-  ShowMessage('B');
 
   result := RecyclerIsValid(drive, '');
 end;
@@ -1590,10 +1556,7 @@ begin
   result := false;
   if not RecyclerIsPossible(drive) then exit;
 
-  ShowMessage('C');
   infofile := RecyclerGetPath(drive, UserSID, false);
-  ShowMessage(infofile);
-  ShowMessage('D');
   result := RecyclerIsValid(infofile);
 end;
 
@@ -1608,14 +1571,11 @@ begin
 
   tmp := InfofileOrRecycleFolder;
 
-  ShowMessage('F');
   if _isFileVistaNamed(tmp) then
   begin
-    ShowMessage('F2');
     result := _VistaIsValid(tmp);
     exit;
   end;
-  ShowMessage('F3');
 
   {$IFDEF allow_all_filenames}
   if not RecyclerIsValid(tmp) and fileexists(tmp) then
@@ -1662,9 +1622,7 @@ begin
     end;
   end;
 
-  ShowMessage('G');
   if not fileexists(tmp) then exit;
-  ShowMessage('H');
 
   result := _checkInfo1or2File(tmp);
 end;
@@ -1823,136 +1781,116 @@ procedure RecyclerGetInfofiles(drive: char; UserSID: string; IncludeInfofile: bo
 var
   dir: string;
 begin
-  (* if Win32Platform = VER_PLATFORM_WIN32_NT then
-  begin *)
-    if _isVistaOrHigher() then
+  // Find recyclers from Windows Vista or higher
+
+  if _isFAT(drive) then
+  begin
+    dir := drive + DriveDelim + PathDelim + '$recycle.bin' + PathDelim;
+    if IncludeInfofile and (fileid <> '') then
     begin
-      if _isFAT(drive) then
+      if fileExists(dir + '$I'+fileid) then
       begin
-        dir := drive + DriveDelim + PathDelim + '$recycle.bin' + PathDelim;
-        if IncludeInfofile and (fileid <> '') then
-        begin
-          if fileExists(dir + '$I'+fileid) then
-          begin
-            result.Add(dir + '$I'+fileid);
-          end;
-        end
-        else
-        begin
-          if directoryExists(dir) then
-          begin
-            result.Add(dir);
-          end;
-        end;
-      end
-      else
-      begin
-        if UserSID <> '' then
-        begin
-          dir := drive + DriveDelim + PathDelim + '$recycle.bin'+PathDelim+UserSID+PathDelim;
-          if IncludeInfofile and (fileid <> '') then
-          begin
-            if fileExists(dir + '$I'+fileid) then
-            begin
-              result.Add(dir + '$I'+fileid);
-            end;
-          end
-          else
-          begin
-            if directoryExists(dir) then
-            begin
-              result.Add(dir);
-            end;
-          end;
-        end
-        else
-        begin
-        ShowMessage('X'+_getMySID());
-          dir := drive + DriveDelim + PathDelim + '$recycle.bin'+PathDelim+_getMySID()+PathDelim;
-          if IncludeInfofile and (fileid <> '') then
-          begin
-            if fileExists(dir + '$I'+fileid) then
-            begin
-showmessage('Y2 ' + dir + '$I'+fileid);
-              result.Add(dir + '$I'+fileid);
-            end;
-          end
-          else
-          begin
-            if directoryExists(dir) then
-            begin
-showmessage('Y1 ' + dir);
-              result.Add(dir);
-            end;
-          end;
-        end;
+        result.Add(dir + '$I'+fileid);
       end;
     end
     else
     begin
-      if _isFAT(drive) then
+      if directoryExists(dir) then
       begin
-        dir := drive + DriveDelim + PathDelim + 'Recycled' + PathDelim;
-        if IncludeInfofile then
-        begin
-          // Both "recycle bins" are possible if you have multiboot (but do overwrite themselfes if you empty them)
-          if fileExists(dir + 'INFO2') then
-            result.Add(dir + 'INFO2'); // Windows 95 with Internet Explorer 4 Extension or higher Windows versions
-          if fileExists(dir + 'INFO') then
-            result.Add(dir + 'INFO'); // Windows 95 native
-        end
-        else
-        begin
-          if directoryExists(dir) then
-            result.Add(dir);
-        end;
-      end
-      else
-      begin
-        if UserSID <> '' then
-        begin
-          dir := drive + DriveDelim + PathDelim + 'Recycler'+PathDelim+UserSID+PathDelim;
-          if IncludeInfofile then
-          begin
-            if fileExists(dir + 'INFO2') then
-              result.Add(dir + 'INFO2');
-          end
-          else
-          begin
-            if directoryExists(dir) then
-              result.Add(dir);
-          end;
-        end
-        else
-        begin
-          dir := drive + DriveDelim + PathDelim + 'Recycler'+PathDelim+_getMySID()+PathDelim;
-          if IncludeInfofile then
-          begin
-            if fileExists(dir + 'INFO2') then
-              result.Add(dir + 'INFO2');
-          end
-          else
-          begin
-            if directoryExists(dir) then
-              result.Add(dir);
-          end;
-        end;
+        result.Add(dir);
       end;
     end;
-  (* end;
+  end
   else
   begin
-    if isWin95() then
+    if UserSID <> '' then
     begin
-      result := drive + DriveDelim + PathDelim + 'Recycled' + PathDelim;
-      if IncludeInfofile then result := result + 'INFO';
+      dir := drive + DriveDelim + PathDelim + '$recycle.bin'+PathDelim+UserSID+PathDelim;
+      if IncludeInfofile and (fileid <> '') then
+      begin
+        if fileExists(dir + '$I'+fileid) then
+        begin
+          result.Add(dir + '$I'+fileid);
+        end;
+      end
+      else
+      begin
+        if directoryExists(dir) then
+        begin
+          result.Add(dir);
+        end;
+      end;
     end
     else
     begin
-      result := drive + DriveDelim + PathDelim + 'Recycled' + PathDelim;
-      if IncludeInfofile then result := result + 'INFO2';
+      dir := drive + DriveDelim + PathDelim + '$recycle.bin'+PathDelim+_getMySID()+PathDelim;
+      if IncludeInfofile and (fileid <> '') then
+      begin
+        if fileExists(dir + '$I'+fileid) then
+        begin
+          result.Add(dir + '$I'+fileid);
+        end;
+      end
+      else
+      begin
+        if directoryExists(dir) then
+        begin
+          result.Add(dir);
+        end;
+      end;
     end;
-  end; *)
+  end;
+
+  // Find recyclers from Windows before Vista
+
+  if _isFAT(drive) then
+  begin
+    dir := drive + DriveDelim + PathDelim + 'Recycled' + PathDelim;
+    if IncludeInfofile then
+    begin
+      // Both "recycle bins" are possible if you have multiboot (but do overwrite themselfes if you empty them)
+      if fileExists(dir + 'INFO2') then
+        result.Add(dir + 'INFO2'); // Windows 95 with Internet Explorer 4 Extension or higher Windows versions
+      if fileExists(dir + 'INFO') then
+        result.Add(dir + 'INFO'); // Windows 95 native
+    end
+    else
+    begin
+      if directoryExists(dir) then
+        result.Add(dir);
+    end;
+  end
+  else
+  begin
+    if UserSID <> '' then
+    begin
+      dir := drive + DriveDelim + PathDelim + 'Recycler'+PathDelim+UserSID+PathDelim;
+      if IncludeInfofile then
+      begin
+        if fileExists(dir + 'INFO2') then
+          result.Add(dir + 'INFO2');
+      end
+      else
+      begin
+        if directoryExists(dir) then
+          result.Add(dir);
+      end;
+    end
+    else
+    begin
+      dir := drive + DriveDelim + PathDelim + 'Recycler'+PathDelim+_getMySID()+PathDelim;
+      if IncludeInfofile then
+      begin
+        if fileExists(dir + 'INFO2') then
+          result.Add(dir + 'INFO2');
+      end
+      else
+      begin
+        if directoryExists(dir) then
+          result.Add(dir);
+      end;
+    end;
+  end;
 end;
 
 procedure RecyclerGetInfofiles(drive: char; UserSID: string; IncludeInfofile: boolean; result: TStringList); overload;
@@ -3087,7 +3025,7 @@ end;
 
 function RecyclerLibraryVersion: string;
 begin
-  result := 'ViaThinkSoft Recycle Bin Unit [04 JUL 2010]';
+  result := 'ViaThinkSoft Recycle Bin Unit [05 JUL 2010]';
 end;
 
 end.
