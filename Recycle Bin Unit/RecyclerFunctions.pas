@@ -7,7 +7,14 @@
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successful tested with:                                                        //
-// Windows 95b, 95b + IE4, 98-SE, XP-SP2, 2000-SP4, 2003-SRV-EE-SP1, VISTA        //
+// Windows 95b (without IE4 Shell Extensions)                                     //
+// Windows 95b (with IE4 Shell Extensions)                                        //
+// Windows 98-SE                                                                  //
+// Windows XP-SP3                                                                 //
+// Windows 2000-SP4                                                               //
+// Windows 2003 Server EE SP1                                                     //
+// Windows Vista                                                                  //
+// Windows 7                                                                      //
 ////////////////////////////////////////////////////////////////////////////////////
 //                                                                                //
 //  Needs Delphi 4 or higher. If you are using Delphi 4 or 5, you can not use the //
