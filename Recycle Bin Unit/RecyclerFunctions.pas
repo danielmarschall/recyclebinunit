@@ -3,7 +3,7 @@
 // E-MAIL: info@daniel-marschall.de                                               //
 // WEB:    www.daniel-marschall.de                                                //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 18 JUN 2010                                                          //
+// Revision: 04 JUL 2010                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successful tested with:                                                        //
@@ -376,7 +376,7 @@ resourcestring
   LNG_UNEXPECTED_STATE = 'Cannot determinate state of "%s" because of an unknown value in the configuration of your operation system. Please contact the developer of the Recycler Bin Unit and help improving the determination methods!';
   LNG_API_CALL_ERROR = 'Error while calling the API. Additional information: "%s".';
   LNG_NOT_CALLABLE = '%s not callable';
-  LNG_ERROR_CODE = '%s returns error code %s';
+  LNG_ERROR_CODE = '%s (Arguments: %s) returns error code %s';
 
 function _GetBit(B: Byte; BitPos: TBitPos): boolean; overload;
 var
@@ -2782,7 +2782,7 @@ begin
   result := true;
   for Drive := 'A' to 'Z' do
   begin
-    if not RecyclerIsEmpty(Drive) then
+    if RecyclerIsPossible(Drive) and not RecyclerIsEmpty(Drive) then
     begin
       result := false;
       exit;
@@ -2802,7 +2802,10 @@ begin
   result := 0;
   for Drive := 'A' to 'Z' do
   begin
-    result := result + RecyclerGetNumItems(Drive);
+    if RecyclerIsPossible(Drive) then
+    begin
+      result := result + RecyclerGetNumItems(Drive);
+    end;
   end;
 end;
 
@@ -2818,7 +2821,10 @@ begin
   result := 0;
   for Drive := 'A' to 'Z' do
   begin
-    result := result + RecyclerGetSize(Drive);
+    if RecyclerIsPossible(Drive) then
+    begin
+      result := result + RecyclerGetSize(Drive);
+    end;
   end;
 end;
 
@@ -2872,7 +2878,11 @@ begin
       // Alles OK, unser result hat nun die gewünschten Daten.
     end
     else
-      raise EAPICallError.CreateFmt(LNG_API_CALL_ERROR, [Format(LNG_ERROR_CODE, [C_SHQueryRecycleBin, '0x'+IntToHex(res, 2*SizeOf(HRESULT))])]);
+    begin
+      // Since Windows Vista, SHQueryRecycleBin will fail with E_FAIL (80004005)
+      // if Path is a floppy or CD drive...
+      raise EAPICallError.CreateFmt(LNG_API_CALL_ERROR, [Format(LNG_ERROR_CODE, [C_SHQueryRecycleBin, Path, '0x'+IntToHex(res, 2*SizeOf(HRESULT))])]);
+    end;
   end
   else
     raise EAPICallError.CreateFmt(LNG_API_CALL_ERROR, [Format(LNG_NOT_CALLABLE, [C_SHQueryRecycleBin])]);
@@ -3058,7 +3068,7 @@ end;
 
 function RecyclerLibraryVersion: string;
 begin
-  result := 'ViaThinkSoft Recycle Bin Unit [18 JUN 2010]';
+  result := 'ViaThinkSoft Recycle Bin Unit [04 JUL 2010]';
 end;
 
 end.

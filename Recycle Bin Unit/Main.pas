@@ -277,7 +277,7 @@ begin
       outputMemo.Lines.Add('GLOBAL Size = ' + IntToStr(RecyclerGetSize) + ' Bytes');
       for d := 'A' to 'Z' do
       begin
-        // if not RecyclerIsPossible(d) then Continue;
+        if not RecyclerIsPossible(d) then Continue; // Important since Windows Vista throws Exceptions!
         outputMemo.Lines.Add('Drive '+d+' Empty = ' + _BoolToYesNo(RecyclerIsEmpty(d)));
         outputMemo.Lines.Add('Drive '+d+' Number of items = ' + IntToStr(RecyclerGetNumItems(d)));
         outputMemo.Lines.Add('Drive '+d+' Size = ' + IntToStr(RecyclerGetSize(d)) + ' Bytes');

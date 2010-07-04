@@ -1,9 +1,9 @@
 object MainForm: TMainForm
   Left = 224
   Top = 149
-  Width = 652
-  Height = 495
   Caption = 'Recycle Bin Example'
+  ClientHeight = 459
+  ClientWidth = 636
   Color = clBtnFace
   Constraints.MinHeight = 495
   Constraints.MinWidth = 652
@@ -19,7 +19,7 @@ object MainForm: TMainForm
   object topPanel: TPanel
     Left = 0
     Top = 0
-    Width = 644
+    Width = 636
     Height = 81
     Align = alTop
     Font.Charset = DEFAULT_CHARSET
@@ -30,7 +30,7 @@ object MainForm: TMainForm
     ParentFont = False
     TabOrder = 0
     object rightPanel: TPanel
-      Left = 412
+      Left = 404
       Top = 1
       Width = 231
       Height = 79
@@ -111,8 +111,8 @@ object MainForm: TMainForm
   object outputPanel: TPanel
     Left = 0
     Top = 81
-    Width = 644
-    Height = 387
+    Width = 636
+    Height = 378
     Align = alClient
     Caption = 'Please wait...'
     Font.Charset = DEFAULT_CHARSET
@@ -125,8 +125,8 @@ object MainForm: TMainForm
     object outputMemo: TMemo
       Left = 1
       Top = 1
-      Width = 642
-      Height = 385
+      Width = 634
+      Height = 376
       Align = alClient
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
