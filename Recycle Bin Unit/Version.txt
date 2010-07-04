@@ -1,8 +1,15 @@
 = Current version =
 
-2010-06-18
+2010-07-05
 
 = Changelog =
+
+2010-07-05
+
++ Made several changes to the source code
++ Vista/7 recycle bins and INFO/INFO2 recycle bins can be now both be found and listed (if you are using multiboot). The OS will not be checked.
++ Application doesn't crash at Windows Vista/7 when checking impossible disks like A:
++ Fully Windows 7 compatibility!
 
 2010-06-18
 
