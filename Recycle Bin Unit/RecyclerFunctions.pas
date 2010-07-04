@@ -21,8 +21,7 @@
 //    - Is it possible to identify a Vista-file that is not named $Ixxxxxx.ext?   //
 //    - RecyclerGetInfofiles() check additionally for removable device?           //
 //      RecyclerIsValid() is false.                                               //
-//    - Function to get current state of recycle-bin (full, empty)                //
-//    - Make functions to get the correct icons of full, empty, current           //
+//    - Make it possible to empty the recycle bin of one specific drive!          //
 //                                                                                //
 //  Unknown! Do you know the answer?                                              //
 //    - How does Windows 9x/NT manage the daylight saving time (if it does)?      //
@@ -45,16 +44,15 @@
 
 == TODO LISTE ==
 
+WINDOWS 7 COMPATIBILITY: No VALID recyclers found!
+
 Wichtig! Windows XP: InfoTip, IntroText und LocalizedString sind Resourcenangaben und müssen ausgelesen werden!
 Testen: Wie reagiert Windows, wenn Bitbucket\C existiert, aber kein Wert 'Percent' hat? Mit der Standardeinstellung?
 Bug: Windows 2000 bei bestehenden Windows 95 Partition: Recycler Filename ist dann Recycled und nicht Recycler!
 bug? w95 recycled file hat immer selben löschzeitpunkt und größe? war die nicht verschieden?
-Feature: win7 support
 beachtet? bei leerem papierkorb auf fat ist weder info noch info2 vorhanden?
 testen: auch möglich, einen vista papierkorb offline öffnen?
 Problem: bei win95(ohne ie4) und win2000 gleichzeitiger installation: es existiert info UND info2!!!
-Neue Funktionen: GetCurrentRecyclerIcon, GetFullIcon, GetEmptyIcon
-Windows 7 miteinbeziehen!
 Implement SETTER functions to every kind of configuration thing. (percentage etc)
 Registry CURRENT_USER: Funktionen auch für fremde Benutzer zur Verfügung stellen?
 Es sollte möglich sein, dass ein Laufwerk mehr als 1 Recycler beinhaltet -- behandeln
@@ -117,7 +115,8 @@ interface
 uses
   Windows, SysUtils, Classes, {$IFDEF DEL6UP}DateUtils,{$ENDIF}
   ShellApi{$IFNDEF DEL6UP}, FileCtrl{$ENDIF}, Registry,
-  BitOps, Messages;
+  Messages, BitOps,
+  Dialogs;
 
 type
   EUnknownState = class(Exception);
@@ -378,17 +377,16 @@ resourcestring
   LNG_NOT_CALLABLE = '%s not callable';
   LNG_ERROR_CODE = '%s (Arguments: %s) returns error code %s';
 
-function _GetBit(B: Byte; BitPos: TBitPos): boolean; overload;
+function FileSize(FileName: string): int64;
 var
-  p: byte;
+  fs: TFileStream;
 begin
-  p := 1 shl BitPos; // 2 ^ BitPos
-  result := B and p = p;
-end;
-
-function _GetBit(B: Char; BitPos: TBitPos): boolean; overload;
-begin
-  result := _GetBit(Ord(B), BitPos);
+  fs := TFileStream.Create(FileName, fmOpenRead);
+  try
+    result := fs.size;
+  finally
+    fs.free;
+  end;
 end;
 
 function _DriveNum(Drive: Char): Byte;
@@ -786,8 +784,11 @@ begin
 end;
 
 // **********************************************************
-// VISTA FUNCTIONS, INTERNAL USED
+// VISTA AND WINDOWS 7 FUNCTIONS, INTERNAL USED
 // **********************************************************
+
+const
+  vista_valid_index_size = $220; // 544
 
 function _isFileVistaRealfile(filename: string): boolean;
 begin
@@ -843,7 +844,7 @@ begin
   begin
     if (sr.Name <> '.') and (sr.Name <> '..') then
     begin
-      if sr.Size = $220 then
+      if sr.Size = vista_valid_index_size then
       begin
         result.Add(copy(sr.name, 3, length(sr.name)-2));
       end;
@@ -988,10 +989,7 @@ end;
 
 function _VistaIsValid(infofile: string): boolean;
 var
-  fs: TFileStream;
   tmp: string;
-const
-  vista_valid_size = $220;
 begin
   result := false;
 
@@ -999,13 +997,8 @@ begin
   tmp := _VistaChangeRealfileToIndexfile(tmp);
   if not fileexists(tmp) then exit;
 
-  fs := TFileStream.Create(tmp, fmOpenRead);
-  try
-    // Check the file length
-    result := fs.size = vista_valid_size;
-  finally
-    fs.free;
-  end;
+  // Check the file length
+  result := FileSize(tmp) = vista_valid_index_size;
 end;
 
 // **********************************************************
@@ -1580,8 +1573,11 @@ begin
   // Bei Vista und W2k3 (VM) erhalte ich bei LW A: die Meldung
   // "c0000013 Kein Datenträger". Exception Abfangen geht nicht.
   // Daher erstmal überprüfen, ob Laufwerk existiert.
+  ShowMessage('Is Valid? ' + drive);
   result := false;
+  ShowMessage('A');
   if not RecyclerIsPossible(drive) then exit;
+  ShowMessage('B');
 
   result := RecyclerIsValid(drive, '');
 end;
@@ -1594,7 +1590,10 @@ begin
   result := false;
   if not RecyclerIsPossible(drive) then exit;
 
+  ShowMessage('C');
   infofile := RecyclerGetPath(drive, UserSID, false);
+  ShowMessage(infofile);
+  ShowMessage('D');
   result := RecyclerIsValid(infofile);
 end;
 
@@ -1609,11 +1608,14 @@ begin
 
   tmp := InfofileOrRecycleFolder;
 
+  ShowMessage('F');
   if _isFileVistaNamed(tmp) then
   begin
+    ShowMessage('F2');
     result := _VistaIsValid(tmp);
     exit;
   end;
+  ShowMessage('F3');
 
   {$IFDEF allow_all_filenames}
   if not RecyclerIsValid(tmp) and fileexists(tmp) then
@@ -1660,7 +1662,9 @@ begin
     end;
   end;
 
+  ShowMessage('G');
   if not fileexists(tmp) then exit;
+  ShowMessage('H');
 
   result := _checkInfo1or2File(tmp);
 end;
@@ -1680,7 +1684,7 @@ end;
 function RecyclerCurrentFilename(drive: char; UserSID: string; fileid: string): string; overload;
 var
   infofile: string;
-begin                                                            
+begin
   infofile := RecyclerGetPath(drive, UserSID, true, fileid);
   result := RecyclerCurrentFilename(infofile, fileid);
 end;
@@ -1829,12 +1833,16 @@ begin
         if IncludeInfofile and (fileid <> '') then
         begin
           if fileExists(dir + '$I'+fileid) then
+          begin
             result.Add(dir + '$I'+fileid);
+          end;
         end
         else
         begin
           if directoryExists(dir) then
+          begin
             result.Add(dir);
+          end;
         end;
       end
       else
@@ -1845,26 +1853,37 @@ begin
           if IncludeInfofile and (fileid <> '') then
           begin
             if fileExists(dir + '$I'+fileid) then
+            begin
               result.Add(dir + '$I'+fileid);
+            end;
           end
           else
           begin
             if directoryExists(dir) then
+            begin
               result.Add(dir);
+            end;
           end;
         end
         else
         begin
+        ShowMessage('X'+_getMySID());
           dir := drive + DriveDelim + PathDelim + '$recycle.bin'+PathDelim+_getMySID()+PathDelim;
           if IncludeInfofile and (fileid <> '') then
           begin
             if fileExists(dir + '$I'+fileid) then
+            begin
+showmessage('Y2 ' + dir + '$I'+fileid);
               result.Add(dir + '$I'+fileid);
+            end;
           end
           else
           begin
             if directoryExists(dir) then
+            begin
+showmessage('Y1 ' + dir);
               result.Add(dir);
+            end;
           end;
         end;
       end;
@@ -2023,13 +2042,13 @@ end;
 
 procedure RecyclerGetAllRecyclerDrives(result: TStringList);
 var
-  x: char;
+  Drive: char;
 begin
-  for x := 'C' to 'Z' do
+  for Drive := 'A' to 'Z' do
   begin
-    if RecyclerIsValid(x) then
+    if RecyclerIsPossible(Drive) and RecyclerIsValid(Drive) then
     begin
-      result.Add(x);
+      result.Add(Drive);
     end;
   end;
 end;
@@ -2636,7 +2655,7 @@ begin
         // See comment at RecyclerSpecificIsNukeOnDelete()
 
         dump := _registryReadDump(reg, 'PurgeInfo');
-        result := _GetBit(dump[68], 3);
+        result := GetByteBit(Ord(dump[68]), 3);
       end
       else
       begin
@@ -2701,7 +2720,7 @@ begin
           // 0x67 = 08 (00001000)
 
           d := _DriveNum(Drive);
-          result := _GetBit(dump[65+(d div 7)], d mod 7);
+          result := GetByteBit(Ord(dump[65+(d div 7)]), d mod 7);
         end
         else
         begin
