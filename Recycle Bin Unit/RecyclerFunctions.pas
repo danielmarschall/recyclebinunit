@@ -371,17 +371,13 @@ end;
 // INTERNALLY USED FUNCTIONS
 // **********************************************************
 
-type
-  TNibble = $0..$F;
-  TBitPos = 0..7;
-
 resourcestring
   LNG_UNEXPECTED_STATE = 'Cannot determinate state of "%s" because of an unknown value in the configuration of your operation system. Please contact the developer of the Recycler Bin Unit and help improving the determination methods!';
   LNG_API_CALL_ERROR = 'Error while calling the API. Additional information: "%s".';
   LNG_NOT_CALLABLE = '%s not callable';
   LNG_ERROR_CODE = '%s (Arguments: %s) returns error code %s';
 
-function FileSize(FileName: string): int64;
+function _FileSize(FileName: string): int64;
 var
   fs: TFileStream;
 begin
@@ -419,21 +415,6 @@ begin
     result := result + chr(buf[i]);
   end;
 end;
-
-function _LowerNibble(B: Byte): TNibble;
-begin
-  result := B and 15 {00001111};
-end;
-
-(* function _UpperNibble(B: Byte): TNibble;
-begin
-  result := B and 240 {11110000};
-end;
-
-function _MakeByte(UpperNibble, LowerNibble: TNibble): Byte;
-begin
-  result := LowerNibble + UpperNibble * $10;
-end; *)
 
 function _GetStringFromDLL(filename: string; num: integer): string;
 const
@@ -974,7 +955,7 @@ begin
   if not fileexists(tmp) then exit;
 
   // Check the file length
-  result := FileSize(tmp) = vista_valid_index_size;
+  result := _FileSize(tmp) = vista_valid_index_size;
 end;
 
 // **********************************************************
@@ -2149,7 +2130,7 @@ begin
 
         // Lese 3tes Bit vom 5ten Byte
         // bNoConfirmRecycle := ((rbuf[4] and 4) = 4);
-        bNoConfirmRecycle := GetByteBit(ord(rbuf[4]), 2);
+        bNoConfirmRecycle := GetByteBit(rbuf[4], 2);
         result := not bNoConfirmRecycle;
 
         reg.CloseKey;
@@ -2600,7 +2581,7 @@ begin
         // See comment at RecyclerSpecificIsNukeOnDelete()
 
         dump := _registryReadDump(reg, 'PurgeInfo');
-        result := GetByteBit(Ord(dump[68]), 3);
+        result := GetAnsiCharBit(dump[68], 3);
       end
       else
       begin
@@ -2665,7 +2646,7 @@ begin
           // 0x67 = 08 (00001000)
 
           d := _DriveNum(Drive);
-          result := GetByteBit(Ord(dump[65+(d div 7)]), d mod 7);
+          result := GetAnsiCharBit(dump[65+(d div 7)], d mod 7);
         end
         else
         begin

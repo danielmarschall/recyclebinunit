@@ -123,7 +123,7 @@
 			<Directories Name="UnitOutputDir"></Directories>
 			<Directories Name="PackageDLLOutputDir"></Directories>
 			<Directories Name="PackageDCPOutputDir"></Directories>
-			<Directories Name="SearchPath">..\Units</Directories>
+			<Directories Name="SearchPath"></Directories>
 			<Directories Name="Packages"></Directories>
 			<Directories Name="Conditionals"></Directories>
 			<Directories Name="DebugSourceDirs"></Directories>
@@ -168,7 +168,7 @@
 			<VersionInfoKeys Name="LegalTrademarks">Keine</VersionInfoKeys>
 			<VersionInfoKeys Name="OriginalFilename">Recycler.exe</VersionInfoKeys>
 			<VersionInfoKeys Name="ProductName">Delphi Recycle Bin Unit</VersionInfoKeys>
-			<VersionInfoKeys Name="ProductVersion">2010.07.04</VersionInfoKeys>
+			<VersionInfoKeys Name="ProductVersion">2010.07.05</VersionInfoKeys>
 			<VersionInfoKeys Name="Comments"></VersionInfoKeys>
 			<VersionInfoKeys Name="Website">www.viathinksoft.de</VersionInfoKeys>
 			<VersionInfoKeys Name="Projektleiter">Daniel Marschall - www.daniel-marschall.de</VersionInfoKeys>
