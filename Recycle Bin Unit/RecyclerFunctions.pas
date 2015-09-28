@@ -3,18 +3,20 @@
 // E-MAIL: info@daniel-marschall.de                                               //
 // WEB:    www.daniel-marschall.de                                                //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 05 JUL 2010                                                          //
+// Revision: 28 SEP 2015                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successful tested with:                                                        //
 // Windows 95b (without IE4 Shell Extensions)                                     //
 // Windows 95b (with IE4 Shell Extensions)                                        //
 // Windows 98-SE                                                                  //
+// Windows NT4 SP6                                                                //
 // Windows XP-SP3                                                                 //
 // Windows 2000-SP4                                                               //
 // Windows 2003 Server EE SP1                                                     //
 // Windows Vista                                                                  //
 // Windows 7                                                                      //
+// Windows 10                                                                     //
 ////////////////////////////////////////////////////////////////////////////////////
 //                                                                                //
 //  Needs Delphi 4 or higher. If you are using Delphi 4 or 5, you can not use the //
@@ -22,8 +24,9 @@
 //  Warning! This is a platform unit.                                             //
 //                                                                                //
 //  To do! Can you help?                                                          //
+//    - Win7 : Drive GUIDs                                                        //
+//    - Win7 : Absolute vs. Relative size limitations                             //
 //    - WideString-Support (input/output)                                         //
-//    - GetLoginNameW: Really 255 maximum?                                        //
 //    - Always do EOF before reading anything?                                    //
 //    - Is it possible to identify a Vista-file that is not named $Ixxxxxx.ext?   //
 //    - RecyclerGetInfofiles() check additionally for removable device?           //
@@ -34,11 +37,6 @@
 //    - How does Windows 9x/NT manage the daylight saving time (if it does)?      //
 //    - How does Windows Vista react to a RECYCLER\ folder on a NTFS device?      //
 //    - How does Windows Vista react to a RECYCLED\ folder on a FAT device?       //
-//                                                                                //
-//  Not analyzed yet! Please send me your trash folder contents for analyzing!    //
-//    - Windows NT                                                                //
-//    - Windows CE?                                                               //
-//    - Windows 7                                                                 //
 //                                                                                //
 //  Thanks to all these who have helped me solving coding problems.               //
 //  Thanks to SEBA for sending in the Windows Vista trash structure files.        //
@@ -51,25 +49,26 @@
 
 == TODO LISTE ==
 
-Wichtig! Windows XP: InfoTip, IntroText und LocalizedString sind Resourcenangaben und müssen ausgelesen werden!
-Testen: Wie reagiert Windows, wenn Bitbucket\C existiert, aber kein Wert 'Percent' hat? Mit der Standardeinstellung?
-Bug: Windows 2000 bei bestehenden Windows 95 Partition: Recycler Filename ist dann Recycled und nicht Recycler!
-bug? w95 recycled file hat immer selben löschzeitpunkt und größe? war die nicht verschieden?
-beachtet? bei leerem papierkorb auf fat ist weder info noch info2 vorhanden?
-testen: auch möglich, einen vista papierkorb offline öffnen?
-Problem: bei win95(ohne ie4) und win2000 gleichzeitiger installation: es existiert info UND info2!!!
-Implement SETTER functions to every kind of configuration thing. (percentage etc)
-Registry CURRENT_USER: Funktionen auch für fremde Benutzer zur Verfügung stellen?
-Es sollte möglich sein, dass ein Laufwerk mehr als 1 Recycler beinhaltet -- behandeln
+- Wichtig! Windows XP: InfoTip, IntroText und LocalizedString sind Resourcenangaben und müssen ausgelesen werden!
+- Testen: Wie reagiert Windows, wenn Bitbucket\C existiert, aber kein Wert 'Percent' hat? Mit der Standardeinstellung?
+- Bug: Windows 2000 bei bestehenden Windows 95 Partition: Recycler Filename ist dann Recycled und nicht Recycler!
+- bug? w95 recycled file hat immer selben löschzeitpunkt und größe? war die nicht verschieden?
+- beachtet? bei leerem papierkorb auf fat ist weder info noch info2 vorhanden?
+- testen: auch möglich, einen vista papierkorb offline öffnen?
+- Problem: bei win95(ohne ie4) und win2000 gleichzeitiger installation: es existiert info UND info2!!!
+- Implement SETTER functions to every kind of configuration thing. (percentage etc)
+- Registry CURRENT_USER: Funktionen auch für fremde Benutzer zur Verfügung stellen?
+- Es sollte möglich sein, dass ein Laufwerk mehr als 1 Recycler beinhaltet -- behandeln
 
-- Future -
+=== Future Ideas ===
 
-Demoapplikation: Dateien statt Text als Explorer-Like?
-Einzelne Elemente oder alle wiederherstellen oder löschen
-Konfiguration für Laufwerke ändern etc
-IconString -> TIcon Convertion functions
-platzreservierung in mb-angabe berechnen
-I don't know if there exists any API function which checks the state at any internal way.
+- Demoapplikation: Dateien statt Text als Explorer-Like (TListView)?
+- Einzelne Elemente oder alle wiederherstellen oder löschen
+- Konfiguration für Laufwerke ändern etc
+- IconString -> TIcon Convertion functions
+- platzreservierung in mb-angabe berechnen
+- I don't know if there exists any API function which checks the state at any internal way.
+- copy/move files from recyclebin
 
 *)
 
@@ -644,21 +643,24 @@ begin
     Result := GetLastError;
 end;
 
+const
+  UNLEN = 256; // lmcons.h
+
 // Template:
 // http://www.latiumsoftware.com/en/pascal/0014.php
 function _getLoginNameW: widestring;
 var
-  Buffer: array[0..255] of widechar;
-  Size: dword;
+  Buffer: array[0..UNLEN] of widechar;
+  Size: DWORD;
 begin
-  Size := 256;
+  Size := SizeOf(Buffer);
   if GetUserNameW(Buffer, Size) then
     Result := Buffer
   else
     Result := 'User';
 end;
 
-function _Dyn_ConvertSidToStringSidA(SID: PSID; var strSID: LPSTR): boolean;
+function _ConvertSidToStringSidA(SID: PSID; var strSID: LPSTR): boolean;
 type
   DllReg = function(SID: PSID; var StringSid: LPSTR): Boolean; stdcall;
 var
@@ -670,11 +672,86 @@ begin
   if hDll <> 0 then
   begin
     @dr := GetProcAddress(hDll, 'ConvertSidToStringSidA');
+
     if assigned(dr) then
     begin
       result := dr(SID, strSID);
     end;
   end;
+end;
+
+const
+  winternl_lib = 'Ntdll.dll';
+
+type
+  USHORT = Word;
+  PWSTR = PWidechar;
+  PCWSTR = PWideChar;
+
+   NTSTATUS = Longword;
+
+  _UNICODE_STRING = record
+    Length: USHORT;
+    MaximumLength: USHORT;
+    Buffer: PWSTR;
+  end;
+  UNICODE_STRING = _UNICODE_STRING;
+  PUNICODE_STRING = ^UNICODE_STRING;
+
+function _RtlConvertSidToUnicodeString(
+  UnicodeString: PUNICODE_STRING;
+  Sid: PSID;
+  AllocateDestinationString: BOOLEAN): NTSTATUS; stdcall;
+type
+  DllReg = function(UnicodeString: PUNICODE_STRING;
+  Sid: PSID;
+  AllocateDestinationString: BOOLEAN): NTSTATUS; stdcall;
+var
+  hDll: THandle;
+  dr: DllReg;
+begin
+  result := $FFFFFFFF;
+  hDll := LoadLibrary(winternl_lib);
+  if hDll = 0 then Exit;
+  try
+    @dr := GetProcAddress(hDll, 'RtlConvertSidToUnicodeString');
+    if not Assigned(dr) then Exit;
+    result := dr(UnicodeString, Sid, AllocateDestinationString);
+  finally
+    FreeLibrary(hDll);
+  end;
+end;
+
+procedure _RtlFreeUnicodeString(UnicodeString: PUNICODE_STRING); stdcall;
+type
+  DllReg = procedure(UnicodeString: PUNICODE_STRING); stdcall;
+var
+  hDll: THandle;
+  dr: DllReg;
+begin
+  hDll := LoadLibrary(winternl_lib);
+  if hDll = 0 then Exit;
+  try
+    @dr := GetProcAddress(hDll, 'RtlFreeUnicodeString');
+    if not Assigned(dr) then Exit;
+    dr(UnicodeString);
+  finally
+    FreeLibrary(hDll);
+  end;
+end;
+
+function _NT_SidToString(SID: PSID; var strSID: string): boolean;
+var
+  pus: PUNICODE_STRING;
+  us: UNICODE_STRING;
+begin
+  pus := @us;
+  result := _RtlConvertSidToUnicodeString(pus, SID, true) = 0;
+  if not result then Exit;
+  strSID := pus^.Buffer;
+  UniqueString(strSID);
+  _RtlFreeUnicodeString(pus);
+  result := true;
 end;
 
 // http://www.delphipraxis.net/post471470.html
@@ -683,24 +760,26 @@ function _getMySID(): string;
 var
   SID: PSID;
   strSID: PAnsiChar;
-  s: String;
   err: DWORD;
 begin
   SID := nil;
 
   err := _getAccountSid('', _getLoginNameW(), SID);
-
-  if err = 0 then
+  if err > 0 then
   begin
-    if _Dyn_ConvertSidToStringSidA(SID, strSID) then
-      s := string(strSID)
-    else
-      s := SysErrorMessage(err);
-  end
-  else
-    s := SysErrorMessage(err);
+    EAPICallError.Create('_getAccountSid:' + SysErrorMessage(err));
+    Exit;
+  end;
 
-  result := s;
+  if _ConvertSidToStringSidA(SID, strSID) then
+  begin
+    result := string(strSID);
+    Exit;
+  end;
+
+  if _NT_SidToString(SID, result) then Exit;
+
+  EAPICallError.Create('_getMySID:' + SysErrorMessage(err));
 end;
 
 // Originalcode aus http://www.delphipraxis.net/post2933.html
@@ -1527,7 +1606,7 @@ end;
 
 function RecyclerIsValid(drive: char): boolean; overload;
 begin
-  // Bei Vista und W2k3 (VM) erhalte ich bei LW A: die Meldung
+  // Bei Vista und Win2003 (VM) erhalte ich bei LW A: die Meldung
   // "c0000013 Kein Datenträger". Exception Abfangen geht nicht.
   // Daher erstmal überprüfen, ob Laufwerk existiert.
   result := false;
@@ -1857,6 +1936,8 @@ begin
       begin
         if fileExists(dir + 'INFO2') then
           result.Add(dir + 'INFO2');
+        if fileExists(dir + 'INFO') then
+          result.Add(dir + 'INFO'); // Windows NT 4
       end
       else
       begin
@@ -1871,6 +1952,8 @@ begin
       begin
         if fileExists(dir + 'INFO2') then
           result.Add(dir + 'INFO2');
+        if fileExists(dir + 'INFO') then
+          result.Add(dir + 'INFO'); // Windows NT 4
       end
       else
       begin

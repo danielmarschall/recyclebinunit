@@ -1,8 +1,10 @@
-= Current version =
+=== Changelog ===
 
-2010-07-05
+2015-09-28 (current version)
 
-= Changelog =
++ Added support for Windows NT4:
+  a) Allowing INFO(1) files in SID-based recycle bins
+  b) Allowing to convert SIDs using NTDLL, if ADVAPI32 fails
 
 2010-07-05
 
