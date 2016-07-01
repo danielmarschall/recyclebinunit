@@ -376,6 +376,34 @@ resourcestring
   LNG_NOT_CALLABLE = '%s not callable';
   LNG_ERROR_CODE = '%s (Arguments: %s) returns error code %s';
 
+function _DeleteDirectory(const Name: string): boolean;
+var
+  F: TSearchRec;
+begin
+  result := true;
+  if FindFirst(IncludeTrailingPathDelimiter(Name) + '*', faAnyFile, F) = 0 then
+  begin
+    try
+      repeat
+        if (F.Attr and faDirectory <> 0) then
+        begin
+          if (F.Name <> '.') and (F.Name <> '..') then
+          begin
+            result := result and _DeleteDirectory(IncludeTrailingPathDelimiter(Name) + F.Name);
+          end;
+        end
+        else
+        begin
+          if not DeleteFile(IncludeTrailingPathDelimiter(Name) + F.Name) then result := false;
+        end;
+      until FindNext(F) <> 0;
+    finally
+      FindClose(F);
+    end;
+    if not RemoveDir(Name) then result := false;
+  end;
+end;
+
 function _FileSize(FileName: string): int64;
 var
   fs: TFileStream;
@@ -1890,6 +1918,7 @@ begin
     end
     else
     begin
+      // TODO: aber vielleicht möchte man die Papierkörbe aller Benutzer (also aller SIDs) finden!!!
       dir := drive + DriveDelim + PathDelim + '$recycle.bin'+PathDelim+_getMySID()+PathDelim;
       if IncludeInfofile and (fileid <> '') then
       begin
@@ -2044,7 +2073,7 @@ begin
   end
   else
   begin
-    directoryexists(tmp);
+    _DeleteDirectory(tmp);
     result := directoryexists(tmp);
   end;
 end;

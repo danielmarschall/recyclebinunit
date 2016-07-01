@@ -8,32 +8,32 @@ HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\ShellState
 
 Windows 95b ohne IE4
 ShGetSettings:	NOT EXISTING!
-[ ]	05h	0 0 0 0 0[1]0 1
-[X]	01h	0 0 0 0 0[0]0 1
+[ ]	05h	0 0 0 0 0 [1] 0 1
+[X]	01h	0 0 0 0 0 [0] 0 1
 [X]1st	?	?
 
 Windows 2000 Professional
 ShGetSettings:	OK
-[ ]	25h	0 0 1 0 0[1]0 1
-[X]	21h	0 0 1 0 0[0]0 1
-[X]1st	20h	0 0 1 0 0[0]0 0
+[ ]	25h	0 0 1 0 0 [1] 0 1
+[X]	21h	0 0 1 0 0 [0] 0 1
+[X]1st	20h	0 0 1 0 0 [0] 0 0
 
-Windows 2000 Professional (Some other Settings!)
+Windows 2000 Professional (Some other settings!)
 ShGetSettings:	OK
-[ ]	65h	0 1 1 0 0[1]0 1
-[X]	61h	0 1 1 0 0[0]0 1
+[ ]	65h	0 1 1 0 0 [1] 0 1
+[X]	61h	0 1 1 0 0 [0] 0 1
 
 Windows XP
 ShGetSettings:	OK
-[ ]	35h	0 0 1 1 0[1]0 1
-[X]	31h	0 0 1 1 0[0]0 1
-[X]1st	30h	0 0 1 1 0[0]0 0
+[ ]	35h	0 0 1 1 0 [1] 0 1
+[X]	31h	0 0 1 1 0 [0] 0 1
+[X]1st	30h	0 0 1 1 0 [0] 0 0
 
 Windows 2003 Server EE, SP1
 ShGetSettings:	OK
-[ ]	3Eh	0 0 1 1 1[1]1 0
-[X]	3Ah	0 0 1 1 1[0]1 0
-[X]1st	33h	0 0 1 1 0[0]1 1
+[ ]	3Eh	0 0 1 1 1 [1] 1 0
+[X]	3Ah	0 0 1 1 1 [0] 1 0
+[X]1st	33h	0 0 1 1 0 [0] 1 1
 
 ---
 
@@ -41,9 +41,9 @@ Unknown sources:
 
 http://www.msfn.org/board/single-shellstate-disable-recycle-delete-conf-t122649.html
 (!) If this is true, the behavior of the 3rd bit seems to have toggled (which I do not believe)
-[ ]	2Ah	0 0 1 0 1[0]1 0
-[X]	2Eh	0 0 1 0 1[1]1 0
+[ ]	2Ah	0 0 1 0 1 [0] 1 0
+[X]	2Eh	0 0 1 0 1 [1] 1 0
 
 Unknown Source
-?	27h	0 0 1 0 0[1]1 1
-?	23h	0 0 1 0 0[0]1 1
+?	27h	0 0 1 0 0 [1] 1 1
+?	23h	0 0 1 0 0 [0] 1 1
