@@ -1,12 +1,18 @@
+
+// ********************************************************************************
+// **** ATTENTION! This unit is not developed anymore.                        *****
+// **** Please use the new version RecBinUnit2.pas , which is Object-oriented *****
+// ********************************************************************************
+
 ////////////////////////////////////////////////////////////////////////////////////
 // RECYCLE-BIN-FUNCTIONS BY DANIEL MARSCHALL                                      //
 // E-MAIL: info@daniel-marschall.de                                               //
 // WEB:    www.daniel-marschall.de                                                //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 28 SEP 2015                                                          //
+// Revision: 01 JUL 2016                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
-// Successful tested with:                                                        //
+// Successfully tested with:                                                      //
 // Windows 95b (without IE4 Shell Extensions)                                     //
 // Windows 95b (with IE4 Shell Extensions)                                        //
 // Windows 98-SE                                                                  //
@@ -3125,7 +3131,7 @@ end;
 
 function RecyclerLibraryVersion: string;
 begin
-  result := 'ViaThinkSoft Recycle Bin Unit [05 JUL 2010]';
+  result := 'ViaThinkSoft Recycle Bin Unit [01 JUL 2016]';
 end;
 
 end.

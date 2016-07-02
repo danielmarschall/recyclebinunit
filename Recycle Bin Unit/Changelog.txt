@@ -1,6 +1,13 @@
-=== Changelog ===
 
-2015-09-28 (current version)
+=== Changelog RecBinUnit v1 ===
+
+ATTENTION! This unit is not developed anymore.
+           Please use the new version RecBinUnit2.pas , which is Object-oriented.
+
+2016-07-01 (current version)
++ RecyclerRemoveItem() does now correctly delete directories.
+
+2015-09-28
 
 + Added support for Windows NT4:
   a) Allowing INFO(1) files in SID-based recycle bins
