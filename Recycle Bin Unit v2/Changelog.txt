@@ -1,0 +1,5 @@
+
+=== Changelog RecBinUnit v2 ===
+
+2016-07-02
++ Initial release
