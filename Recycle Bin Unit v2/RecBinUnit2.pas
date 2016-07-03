@@ -1,20 +1,20 @@
 unit RecBinUnit2 platform;
 
 ////////////////////////////////////////////////////////////////////////////////////
-// RECYCLE-BIN-FUNCTIONS V2 BY DANIEL MARSCHALL                                   //
+// RECYCLE-BIN-UNIT V2 BY DANIEL MARSCHALL, VIATHINKSOFT                          //
 // E-MAIL: info@daniel-marschall.de                                               //
-// WEB:    www.daniel-marschall.de                                                //
+// Web:    www.daniel-marschall.de & www.viathinksoft.de                          //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 02 JUL 2016                                                          //
+// Revision: 03 JUL 2016                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successfully tested with:                                                      //
 // Windows 95b (without IE4 Shell Extensions)                                     //
 // Windows 95b (with IE4 Shell Extensions)                                        //
-// Windows 98-SE                                                                  //
+// Windows 98 SE                                                                  //
 // Windows NT4 SP6                                                                //
-// Windows XP-SP3                                                                 //
-// Windows 2000-SP4                                                               //
+// Windows XP SP3                                                                 //
+// Windows 2000 SP4                                                               //
 // Windows 2003 Server EE SP1                                                     //
 // Windows Vista                                                                  //
 // Windows 7                                                                      //
@@ -26,11 +26,11 @@ unit RecBinUnit2 platform;
 // - Remove "strict"
 // - Remove "$REGION"
 
-// TODO: "blind reading" feature: read also INFO and INFO2 records mixed in one file (win2000 multiboot conflict)
 // TODO: ReadBuffer überall try-except
 // TODO: Win7 : Drive GUIDs
 // TODO: Win7 : Absolute vs. Relative size limitations
 // TODO: Always check EOF before reading anything?
+// TODO: Don't crash when timestamp is invalid. Do something else instead.
 // TODO: Is it possible to identify a Vista-file that is not named $Ixxxxxx.ext?
 // TODO: RecyclerGetInfofiles() check additionally for removable device?
 //       RecyclerIsValid() is false.
@@ -55,7 +55,7 @@ uses
   Windows, SysUtils, Classes, ContNrs, ShellAPI, Registry, Messages;
 
 const
-  RECBINUNIT_VERSION = '2016-07-02';
+  RECBINUNIT_VERSION = '2016-07-03';
 
   RECYCLER_CLSID: TGUID = '{645FF040-5081-101B-9F08-00AA002F954E}';
   NULL_GUID: TGUID      = '{00000000-0000-0000-0000-000000000000}';
@@ -67,7 +67,7 @@ type
 
   PSHQueryRBInfo = ^TSHQueryRBInfo;
   TSHQueryRBInfo = packed record
-    cbSize      : dword;
+    cbSize      : DWORD;
     i64Size     : int64;
     i64NumItems : int64;
   end;
@@ -105,7 +105,7 @@ type
     function OpenFile: boolean; virtual; abstract;
   end;
 
-  TRbInfo1Item = class(TRbRecycleBinItem)
+  TRbInfoAItem = class(TRbRecycleBinItem)
   strict protected
     procedure ReadFromStream(stream: TStream); override;
     function GetPhysicalFile: string; override;
@@ -116,7 +116,7 @@ type
     // TODO: function OpenFile: boolean; override;
   end;
 
-  TRbInfo2Item = class(TRbRecycleBinItem)
+  TRbInfoWItem = class(TRbRecycleBinItem)
   strict protected
     procedure ReadFromStream(stream: TStream); override;
     function GetPhysicalFile: string; override;
@@ -142,6 +142,7 @@ type
   strict private
     FFileOrDirectory: string;
     FSID: string;
+    FTolerantReading: boolean;
   public
     constructor Create(AFileOrDirectory: string; ASID: string='');
 
@@ -151,6 +152,10 @@ type
 
     property FileOrDirectory: string read FFileOrDirectory;
     property SID: string read FSID;
+
+    // Allows an index file to be read, even if an incompatible multiboot combination
+    // corrupted it. Default: true.
+    property TolerantReading: boolean read FTolerantReading write FTolerantReading;
   end;
 
   // TODO: Wie sieht es aus mit Laufwerken, die nur als Mount-Point eingebunden sind?
@@ -340,7 +345,7 @@ resourcestring
   LNG_NOT_CALLABLE = '%s not callable';
   LNG_ERROR_CODE = '%s (Arguments: %s) returns error code %s';
   LNG_FILE_NOT_FOUND = 'File not found: %s';
-  LNG_INVALID_INFO_FORMAT = 'Is not INFO or INFO2: %s';
+  LNG_INVALID_INFO_FORMAT = 'Unexpected record size: %s';
   LNG_DRIVE_NOT_EXISTING = 'Drive %s does not exist.';
 
 const
@@ -584,6 +589,7 @@ begin
 
   FFileOrDirectory := AFileOrDirectory;
   FSID := ASID;
+  TolerantReading := true;
 end;
 
 // TODO: also a function that tests if the data files are still existing
@@ -601,7 +607,7 @@ function TRbRecycleBin.CheckIndexes(slErrors: TStrings): boolean;
   procedure _HandleIndexFile(AFile: string);
   var
     fs: TFileStream;
-    infoHdr: TRbInfo12Header;
+    infoHdr: TRbInfoHeader;
   resourcestring
     LNG_IDXERR_VISTA_FILESIZE = '%s: Vista index file has wrong size';
     LNG_IDXERR_INFO_RECSIZE_UNEXPECTED = '%s: record size unexpected';
@@ -611,25 +617,20 @@ function TRbRecycleBin.CheckIndexes(slErrors: TStrings): boolean;
     try
       fs.Seek(0, soFromBeginning);
 
-      // TODO: LNG_*
-
       if SameText(copy(ExtractFileName(AFile), 1, 2), '$I') then
       begin
         _Assert(fs.Size = SizeOf(TRbVistaItem), LNG_IDXERR_VISTA_FILESIZE, [AFile]);
       end
-      else if SameText(ExtractFileName(AFile), 'INFO') then
+      else if SameText(ExtractFileName(AFile), 'INFO') or
+              SameText(ExtractFileName(AFile), 'INFO2') then
       begin
         fs.ReadBuffer(infoHdr, SizeOf(infoHdr));
-        _Assert(infoHdr.recordLength = SizeOf(TRbInfoRecord), LNG_IDXERR_INFO_RECSIZE_UNEXPECTED, [AFile]);
+        _Assert((infoHdr.recordLength = SizeOf(TRbInfoRecordA)) or
+                (infoHdr.recordLength = SizeOf(TRbInfoRecordW)), LNG_IDXERR_INFO_RECSIZE_UNEXPECTED, [AFile]);
         _Assert((fs.Size-fs.Position) mod infoHdr.recordLength = 0, LNG_IDXERR_INFO_UNEXPECTED_EOF, [AFile]);
-        // TODO: we can also check infoHdr.totalSize
+        // TODO: we can also check infoHdr.totalSize or infoHdr.totalEntries
       end
-      else if SameText(ExtractFileName(AFile), 'INFO2') then
-      begin
-        fs.ReadBuffer(infoHdr, SizeOf(infoHdr));
-        _Assert(infoHdr.recordLength = SizeOf(TRbInfo2Record), LNG_IDXERR_INFO_RECSIZE_UNEXPECTED, [AFile]);
-        _Assert((fs.Size-fs.Position) mod infoHdr.recordLength = 0, LNG_IDXERR_INFO_UNEXPECTED_EOF, [AFile]);
-      end;
+      else Assert(false);
 
       // TODO: we could check each item for invalid stuff...?
     finally
@@ -681,7 +682,7 @@ function TRbRecycleBin.GetItem(id: string): TRbRecycleBinItem;
   procedure _HandleIndexFile(AFile: string);
   var
     fs: TFileStream;
-    infoHdr: TRbInfo12Header;
+    infoHdr: TRbInfoHeader;
     testItem: TRbRecycleBinItem;
   begin
     fs := TFileStream.Create(AFile, fmOpenRead);
@@ -699,11 +700,11 @@ function TRbRecycleBin.GetItem(id: string): TRbRecycleBinItem;
       begin
         fs.ReadBuffer(infoHdr, SizeOf(infoHdr));
         case infoHdr.recordLength of
-          SizeOf(TRbInfoRecord):
+          SizeOf(TRbInfoRecordA):
           begin
             while fs.Position < fs.size do
             begin
-              testItem := TRbInfo1Item.Create(fs, AFile);
+              testItem := TRbInfoAItem.Create(fs, AFile);
               if testItem.ID = id then
               begin
                 result := testItem;
@@ -711,11 +712,11 @@ function TRbRecycleBin.GetItem(id: string): TRbRecycleBinItem;
               end;
             end;
           end;
-          SizeOf(TRbInfo2Record):
+          SizeOf(TRbInfoRecordW):
           begin
             while fs.Position < fs.size do
             begin
-              testItem := TRbInfo2Item.Create(fs, AFile);
+              testItem := TRbInfoWItem.Create(fs, AFile);
               if testItem.ID = id then
               begin
                 result := testItem;
@@ -787,8 +788,10 @@ procedure TRbRecycleBin.ListItems(list: TObjectList{TRbRecycleBinItem});
   procedure _HandleIndexFile(AFile: string);
   var
     fs: TFileStream;
-    infoHdr: TRbInfo12Header;
+    infoHdr: TRbInfoHeader;
     testID: string;
+    wTest: TRbInfoWItem;
+    bakPosition: int64;
   begin
     fs := TFileStream.Create(AFile, fmOpenRead);
     try
@@ -800,31 +803,75 @@ procedure TRbRecycleBin.ListItems(list: TObjectList{TRbRecycleBinItem});
         if SameText(copy(testID, 1, 2), '$I') then
           testID := copy(testID, 3, Length(testID)-2)
         else
-          testID := '';
+          testID := ''; // Just in case the user wants to read a single Vista file, but without the $I name
 
         list.Add(TRbVistaItem.Create(fs, AFile, testID));
       end
       else
       begin
-        fs.ReadBuffer(infoHdr, SizeOf(infoHdr));
-        case infoHdr.recordLength of
-          SizeOf(TRbInfoRecord):
+        if TolerantReading then
+        begin
+          // This is a special treatment how to recover data from an INFO/INFO2 file
+          // which was corrupted by an incompatible multiboot configuration.
+          // Example:
+          // - Win95 without IE4 and WinNT4 both write into the INFO file. But Win95 appends the ANSI record and WinNT appends an Unicode record.
+          // - Win95 with IE4 and Windows 2000/2003/XP write into the INFO2 file. But Win9x appends the ANSI record and Win2k+ appends an Unicode record.
+          fs.ReadBuffer(infoHdr, SizeOf(infoHdr));
+          while fs.Position < fs.size do
           begin
-            while fs.Position < fs.size do
+            // Can we actually read a Unicode record?
+            if fs.Position + SizeOf(TRbInfoRecordW) <= fs.Size then
             begin
-              list.Add(TRbInfo1Item.Create(fs, AFile));
+              // Try to read the Unicode record and check if it is valid
+              // In case it is no Unicode record, then the Unicode part will be the
+              // ANSI source name of the next record. In this case, we won't get
+              // a ':' at the Unicode string.
+              bakPosition := fs.Position;
+              wTest := TRbInfoWItem.Create(fs, AFile);
+              if Copy(wTest.SourceUnicode, 2, 1) = ':' then
+              begin
+                // Yes, it is a valid Unicode record.
+                list.Add(wTest);
+              end
+              else
+              begin
+                // No, it is not a valid Unicode record. Jump back, and we need
+                // to assume that the following record will be a valid ANSI record.
+                fs.Position := bakPosition;
+                list.Add(TRbInfoAItem.Create(fs, AFile));
+              end;
+            end
+            else
+            begin
+              // No, there is not enough space left for an Unicode record.
+              // So we assume that the following record will be a valid ANSI record.
+              list.Add(TRbInfoAItem.Create(fs, AFile));
             end;
           end;
-          SizeOf(TRbInfo2Record):
-          begin
-            while fs.Position < fs.size do
+        end
+        else
+        begin
+          // This is the code for non-tolerant reading of the records.
+          fs.ReadBuffer(infoHdr, SizeOf(infoHdr));
+          case infoHdr.recordLength of
+            SizeOf(TRbInfoRecordA):
             begin
-              list.Add(TRbInfo2Item.Create(fs, AFile));
+              while fs.Position < fs.size do
+              begin
+                list.Add(TRbInfoAItem.Create(fs, AFile));
+              end;
             end;
-          end
-          else
-          begin
-            raise Exception.CreateFmt(LNG_INVALID_INFO_FORMAT, [AFile]);
+            SizeOf(TRbInfoRecordW):
+            begin
+              while fs.Position < fs.size do
+              begin
+                list.Add(TRbInfoWItem.Create(fs, AFile));
+              end;
+            end
+            else
+            begin
+              raise Exception.CreateFmt(LNG_INVALID_INFO_FORMAT, [AFile]);
+            end;
           end;
         end;
       end;
@@ -877,7 +924,7 @@ begin
   end
   else if FileExists(FFileOrDirectory) then
   begin
-    _HandleIndexFile(FFileOrDirectory);
+    _HandleIndexFile(FFileOrDirectory); // Either INFO, or INFO2, or a single Vista index file
   end
   else raise Exception.CreateFmt(LNG_FILE_NOT_FOUND, [FFileOrDirectory]);
 end;
@@ -1171,7 +1218,7 @@ begin
 
     // Both "recycle bins" are possible if you have multiboot (but do overwrite themselfes if you empty them)
     if FileExists(dir + 'INFO2') then
-      list.Add(TRbRecycleBin.Create(dir + 'INFO2')); // Windows 95 with Internet Explorer 4 Extension or higher Windows versions
+      list.Add(TRbRecycleBin.Create(dir + 'INFO2')); // Windows 95 with Internet Explorer 4 Extension or higher Windows 9x versions
     if FileExists(dir + 'INFO') then
       list.Add(TRbRecycleBin.Create(dir + 'INFO')); // Windows 95 native
   end
@@ -1182,7 +1229,7 @@ begin
       dir := FDriveLetter + DriveDelim + PathDelim + 'Recycler' + PathDelim + UserSID + PathDelim;
 
       if FileExists(dir + 'INFO2') then
-        list.Add(TRbRecycleBin.Create(dir + 'INFO2', UserSID));
+        list.Add(TRbRecycleBin.Create(dir + 'INFO2', UserSID)); // Windows 2000+
       if FileExists(dir + 'INFO') then
         list.Add(TRbRecycleBin.Create(dir + 'INFO', UserSID)); // Windows NT 4
     end
@@ -1193,18 +1240,22 @@ begin
   end;
 end;
 
-{ TRbInfo1Item }
+{ TRbInfoAItem }
 
-procedure TRbInfo1Item.ReadFromStream(stream: TStream);
+procedure TRbInfoAItem.ReadFromStream(stream: TStream);
 var
-  r: TRbInfoRecord;
+  r: TRbInfoRecordA;
 begin
   stream.ReadBuffer(r, SizeOf(r));
 
   FSourceDrive := Chr(Ord('A') + r.sourceDrive);
 
-  // This behavior will probably only happen with INFO2 files. Just to be sure,
-  // we will also include the code here.
+  // Win95 with IE4 and Win2000+:
+  // Wenn ein Eintrag aus der INFO/INFO2 gelöscht wird, dann wird das erste Byte
+  // von sourceAnsi auf Null gesetzt, damit die ganze INFO/INFO2 Datei nicht
+  // ständig neu geschrieben werden muss (so wie es bei Win95 und WinNT4 der Fall war).
+  // Wir lesen den Eintrag trotzdem, da unsere Software ja auch zu forensischen
+  // Zwecken eingesetzt werden soll.
   if r.sourceAnsi[0] = #0 then
   begin
     FRemovedEntry := true;
@@ -1218,7 +1269,7 @@ begin
   FOriginalSize := r.originalSize;
 end;
 
-function TRbInfo1Item.DeleteFile: boolean;
+function TRbInfoAItem.DeleteFile: boolean;
 var
   r: string;
 begin
@@ -1231,7 +1282,7 @@ begin
   // TODO: nun auch den eintrag aus der INFO-Datei rausschmeißen (Datei neu schreiben)
 end;
 
-function TRbInfo1Item.GetPhysicalFile: string;
+function TRbInfoAItem.GetPhysicalFile: string;
 begin
   if FRemovedEntry then
   begin
@@ -1241,29 +1292,28 @@ begin
 
   // e.g. C:\...\DC0.doc
   result := IncludeTrailingPathDelimiter(ExtractFilePath(IndexFile)) +
-            'D' + SourceDrive + ID + ExtractFileExt(SourceAnsi);
+            'D' + (* SourceDrive *) SourceAnsi[1] + ID + ExtractFileExt(SourceAnsi);
 end;
 
-constructor TRbInfo1Item.Create(fs: TStream; AIndexFile: string);
+constructor TRbInfoAItem.Create(fs: TStream; AIndexFile: string);
 begin
   inherited Create;
   ReadFromStream(fs);
   FIndexFile := AIndexFile;
 end;
 
-{ TRbInfo2Item }
+{ TRbInfoWItem }
 
-procedure TRbInfo2Item.ReadFromStream(stream: TStream);
+procedure TRbInfoWItem.ReadFromStream(stream: TStream);
 var
-  r: TRbInfo2Record;
+  r: TRbInfoRecordW;
 begin
   stream.ReadBuffer(r, SizeOf(r));
 
-  // Wenn ein Eintrag aus der INFO2 gelöscht wird, dann wird das erste Byte
-  // von sourceAnsi auf Null gesetzt, damit die ganze INFO2 Datei nicht
-  // ständig neu geschrieben werden muss.
-  // Bei Win95/INFO wird der Eintrag komplett rausgelöscht und die INFO-Datei
-  // daher neu geschrieben.
+  // Win95 with IE4 and Win2000+:
+  // Wenn ein Eintrag aus der INFO/INFO2 gelöscht wird, dann wird das erste Byte
+  // von sourceAnsi auf Null gesetzt, damit die ganze INFO/INFO2 Datei nicht
+  // ständig neu geschrieben werden muss (so wie es bei Win95 und WinNT4 der Fall war).
   // Wir lesen den Eintrag trotzdem, da unsere Software ja auch zu forensischen
   // Zwecken eingesetzt werden soll.
   if r.sourceAnsi[0] = #0 then
@@ -1280,7 +1330,7 @@ begin
   FOriginalSize := r.originalSize;
 end;
 
-function TRbInfo2Item.DeleteFile: boolean;
+function TRbInfoWItem.DeleteFile: boolean;
 var
   r: string;
 begin
@@ -1293,7 +1343,7 @@ begin
   // TODO: nun auch den eintrag aus der INFO-Datei rausschmeißen (Erstes Byte auf 0 setzen)
 end;
 
-function TRbInfo2Item.GetPhysicalFile: string;
+function TRbInfoWItem.GetPhysicalFile: string;
 begin
   if FRemovedEntry then
   begin
@@ -1301,12 +1351,33 @@ begin
     Exit;
   end;
 
+  (*
+  This is actually a bit tricky...
+  Win95 will choose the first letter of the AnsiSource name.
+  WinNT will choose the first letter of the UnicodeSource name.
+  WinXP will choose the driveNumber member.
+
+  Windows XP is kinda buggy when it comes to changing a drive letter.
+  For example, the drive E: was changed to K:
+  The drive letter is 04 (E), the Source name begins with E:\ and the physical file is De0.txt .
+  After the recycle bin is opened the first time:
+  - The recycle bin will show the file origin as K:\ and not as E:\
+  - The file was renamed from De0.txt to Dk0.txt
+  - The file can be recovered at this time
+  When the recycle bin is closed, the INFO2 file will not be corrected (which is a bug).
+  So, if you open the recycle bin again, the record will be marked
+  as deleted in the INFO file (the first byte will be set to 0),
+  because Windows searches for De0.txt and doesn't find it.
+
+  (This comment also applies to TRbInfoAItem.GetPhysicalFile)
+  *)
+
   // e.g. C:\...\DC0.doc
   result := IncludeTrailingPathDelimiter(ExtractFilePath(IndexFile)) +
-            'D' + SourceDrive + ID + ExtractFileExt(SourceUnicode);
+            'D' + SourceDrive (* SourceUnicode[1] *) + ID + ExtractFileExt(SourceUnicode);
 end;
 
-constructor TRbInfo2Item.Create(fs: TStream; AIndexFile: string);
+constructor TRbInfoWItem.Create(fs: TStream; AIndexFile: string);
 begin
   inherited Create;
   ReadFromStream(fs);
@@ -1480,6 +1551,15 @@ begin
     reg.Free;
   end;
 end;
+
+(* TODO:
+There are more registry values (found in WinXP):
+
+BitBucket\<driveletter>
+  VolumeSerialNumber
+  IsUnicode
+
+*)
 
 class function TRecycleBinManager.UsesGlobalSettings: boolean;
 var

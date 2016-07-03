@@ -9,28 +9,39 @@ uses
   Windows;
 
 type
-  TRbInfo12Header = record
-    unknown1: DWORD; // For INFO2 always 05 00 00 00 ?
-    unknown2: DWORD; // For INFO2 always 00 00 00 00 ?
-    unknown3: DWORD; // For INFO2 always 00 00 00 00 ?
+  PRbInfoHeader = ^TRbInfoHeader;
+  TRbInfoHeader = record
+    format: DWORD;         // Unsure...
+                           // Win95 (without IE4): 00 00 00 00
+                           // Win95 (with IE4):    04 00 00 00
+                           // Win NT4:             02 00 00 00
+                           // Win XP:              05 00 00 00
+    totalEntries: DWORD;   // Only Win95 (without IE4) and Win NT4, unknown purpose for other OS versions
+    nextPossibleID: DWORD; // Only Win95 (without IE4) and Win NT4, unknown purpose for other OS versions
     recordLength: DWORD; // 0x181  =  INFO  structure (without Unicode)
                          // 0x320  =  INFO2 structure (with Unicode)
-    totalSize: DWORD; // INFO file: sum of all "originalSize" values
-                      // INFO2 file: always zero?
+    totalSize: DWORD; // sum of all "originalSize" values;
+                      // Only Win95 (without IE4) and Win NT4, unknown purpose for other OS versions
   end;
 
 type
-  TRbInfoRecord = record
+  // Windows 95:      INFO file with TRbInfoRecordA; Folder deletion NOT possible
+  // Windows 95 +IE4: INFO2 file with TRbInfoRecordA; Folder deletion possible
+  PRbInfoRecordA = ^TRbInfoRecordA;
+  TRbInfoRecordA = record
     sourceAnsi: array[0..MAX_PATH-3] of AnsiChar; // 258 elements
     recordNumber: DWORD;
     sourceDrive: DWORD;
     deletionTime: FILETIME;
     originalSize: DWORD; // Size occupied on disk. Not the actual file size.
-                         // INFO2, for folders: The whole folder size with contents 
+                         // INFO2, for folders: The whole folder size with contents
   end;
 
 type
-  TRbInfo2Record = record
+  // Windows NT4:   INFO file with TRbInfoRecordW; Folder deletion possible
+  // Windows 2000+: INFO2 file with TRbInfoRecordW; Folder deletion possible
+  PRbInfoRecordW = ^TRbInfoRecordW;
+  TRbInfoRecordW = record
     sourceAnsi: array[0..MAX_PATH-3] of AnsiChar; // 258 elements
     recordNumber: DWORD;
     sourceDrive: DWORD;
@@ -41,6 +52,7 @@ type
   end;
 
 type
+  PRbVistaRecord = ^TRbVistaRecord;
   TRbVistaRecord = record
     signature: int64; // Always 01 00 00 00 00 00 00 00 ?
     originalSize: int64;
@@ -49,8 +61,9 @@ type
   end;
 
 type
-  // Windows 95
+  // Windows 95 + Windows NT 4
   // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\BitBucket: PurgeInfo (Binary)
+  PRbWin95PurgeInfo = ^TRbWin95PurgeInfo;
   TRbWin95PurgeInfo = record
     cbSize: DWORD;
     bGlobalSettings: BOOL;

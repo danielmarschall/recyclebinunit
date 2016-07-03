@@ -1,0 +1,12 @@
+
+HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\BitBucket
+
+
+LastEnum Example on a system with 3 HDDs:
+
+0,{14985747-c2b7-11e5-bb05-806e6f6e6963} F:\ (system, on the SSD) -- system partition on C:
+0,{14985749-c2b7-11e5-bb05-806e6f6e6963} S:\ (storage, 1tb)
+0,{14985748-c2b7-11e5-bb05-806e6f6e6963} C:\ (SSD)
+0,{a125256f-f2eb-11e1-bfa2-50e549537257} H:\ "home"/document HDD
+
+++ truecrypt volume is not listed

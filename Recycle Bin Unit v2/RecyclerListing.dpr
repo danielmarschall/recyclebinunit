@@ -11,6 +11,7 @@ uses
 
 begin
   Application.Initialize;
+  Application.Title := 'Recycler Listing (ViaThinkSoft Recycle Bin Unit v2 Demo)';
   Application.CreateForm(TRecyclerListingMainForm, RecyclerListingMainForm);
   Application.Run;
 end.

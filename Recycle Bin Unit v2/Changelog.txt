@@ -1,5 +1,18 @@
 
 === Changelog RecBinUnit v2 ===
 
+2016-07-03
++ Due to new information: Renamed some class names, e.g.
+    TRbInfo1Item into TRbInfoAItem
+    TRbInfo2Item into TRbInfoWItem
++ Added more information by adding comments and
+  included an Excel spreadsheet.
++ CheckIndexes now handles INFO and INFO2 files equally.   
++ NEW FEATURE: "Tolerant reading" (default: true)
+  to allow index files which are corrupted by an incompatible
+  multiboot constellation to be read.
++ TRbInfoAItem.GetPhysicalFile will now choose the
+  first AnsiSource letter instead of the DriveIdentification DWORD.
+
 2016-07-02
 + Initial release
