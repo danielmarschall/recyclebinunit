@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls;
+  Dialogs, StdCtrls, ComCtrls, ExtCtrls, ImgList;
 
 type
   TRecyclerListingMainForm = class(TForm)
@@ -12,11 +12,16 @@ type
     Panel1: TPanel;
     Button1: TButton;
     CheckBox1: TCheckBox;
+    Button2: TButton;
+    OpenDialog1: TOpenDialog;
+    LabeledEdit1: TLabeledEdit;
+    ImageList1: TImageList;
     procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
-    { Private-Deklarationen }
-  public
-    { Public-Deklarationen }
+    localRecyclersNode: TTreeNode;
+    individualRecyclersNode: TTreeNode;
   end;
 
 var
@@ -31,6 +36,7 @@ uses
 
 // TODO: SID Namen auflösen und dementsprechend anzeigen
 // TODO: zu jedem element mehr informationen anzeigen, nicht nur den ursprungsnamen
+// TODO: Einstellungen usw anzeigen, so wie im alten Demo
 
 procedure TRecyclerListingMainForm.Button1Click(Sender: TObject);
 var
@@ -49,7 +55,8 @@ var
   item: TRbRecycleBinItem;
   nItem: TTreeNode;
 begin
-  TreeView1.Items.Clear;
+  localRecyclersNode.DeleteChildren;
+
   TreeView1.Items.BeginUpdate;
   drives := TObjectList.Create(true);
   bins := TObjectList.Create(true);
@@ -61,7 +68,12 @@ begin
     begin
       drive := drives.Items[iDrive] as TRbDrive;
 
-      nDrive := TreeView1.Items.AddObject(nil, 'Drive '+drive.DriveLetter+': ' + GUIDToString(drive.VolumeGUID), drive);
+      if drive.VolumeGUIDAvailable then
+        nDrive := TreeView1.Items.AddChildObject(localRecyclersNode, 'Drive '+drive.DriveLetter+': ' + GUIDToString(drive.VolumeGUID), drive)
+      else
+        nDrive := TreeView1.Items.AddChildObject(localRecyclersNode, 'Drive '+drive.DriveLetter+':', drive);
+      nDrive.ImageIndex := 6;
+      nDrive.SelectedIndex := 6;
 
       bins.Clear;
       if CheckBox1.Checked then
@@ -73,6 +85,8 @@ begin
         bin := bins.Items[iBin] as TRbRecycleBin;
 
         nBin := TreeView1.Items.AddChildObject(nDrive, bin.FileOrDirectory, bin);
+        nBin.ImageIndex := 4;
+        nBin.SelectedIndex := 4;
 
         items.Clear;
         bin.ListItems(items);
@@ -80,6 +94,8 @@ begin
         begin
           item := items.Items[iItem] as TRbRecycleBinItem;
           nItem := TreeView1.Items.AddChildObject(nBin, item.Source, bin);
+          nItem.ImageIndex := 0;
+          nItem.SelectedIndex := 0;
         end;
       end;
     end;
@@ -89,6 +105,52 @@ begin
     items.Free;
     TreeView1.Items.EndUpdate;
   end;
+
+  localRecyclersNode.Expand(false);
+end;
+
+procedure TRecyclerListingMainForm.Button2Click(Sender: TObject);
+var
+  bin: TRbRecycleBin;
+  nBin: TTreeNode;
+
+  items: TObjectList{TRbRecycleBinItem};
+  iItem: integer;
+  item: TRbRecycleBinItem;
+  nItem: TTreeNode;
+begin
+  bin := TRbRecycleBin.Create(LabeledEdit1.Text);
+
+  nBin := TreeView1.Items.AddChildObject(individualRecyclersNode, bin.FileOrDirectory, bin);
+  individualRecyclersNode.Expand(false);
+
+  items := TObjectList.Create(true);
+  try
+    items.Clear;
+    bin.ListItems(items);
+    for iItem := 0 to items.Count - 1 do
+    begin
+      item := items.Items[iItem] as TRbRecycleBinItem;
+      nItem := TreeView1.Items.AddChildObject(nBin, item.Source, bin);
+      nItem.ImageIndex := 0;
+      nItem.SelectedIndex := 0;
+    end;
+  finally
+    items.Free;
+  end;
+
+  nBin.Expand(false);
+end;
+
+procedure TRecyclerListingMainForm.FormShow(Sender: TObject);
+begin
+  localRecyclersNode := TreeView1.Items.Add(nil, 'Local recyclers');
+  localRecyclersNode.ImageIndex := 2;
+  localRecyclersNode.SelectedIndex := 2;
+
+  individualRecyclersNode := TreeView1.Items.Add(nil, 'Manually added recycle bins');
+  individualRecyclersNode.ImageIndex := 2;
+  individualRecyclersNode.SelectedIndex := 2;
 end;
 
 end.

@@ -55,7 +55,7 @@ uses
   Windows, SysUtils, Classes, ContNrs, ShellAPI, Registry, Messages;
 
 const
-  RECBINUNIT_VERSION = '2016-07-03';
+  RECBINUNIT_VERSION = '2016-07-05';
 
   RECYCLER_CLSID: TGUID = '{645FF040-5081-101B-9F08-00AA002F954E}';
   NULL_GUID: TGUID      = '{00000000-0000-0000-0000-000000000000}';
@@ -165,6 +165,7 @@ type
 
     // will return NULL_GUID in case of an error or if it is not supported
     function GetVolumeGUID: TGUID;
+    function GetVolumeGUIDAvailable: boolean; protected
   strict protected
     function IsFAT: boolean;
     procedure CheckDriveExisting;
@@ -176,6 +177,7 @@ type
 
     property DriveLetter: Char read FDriveLetter;
     property VolumeGUID: TGUID read GetVolumeGUID;
+    property VolumeGUIDAvailable: boolean read GetVolumeGUIDAvailable;
     function GetAPIInfo: TSHQueryRBInfo;
     function GetSize: int64;
     function GetNumItems: int64;
@@ -1127,6 +1129,11 @@ begin
   begin
     result := NULL_GUID;
   end;
+end;
+
+function TRbDrive.GetVolumeGUIDAvailable: boolean;
+begin
+  result := not IsEqualGUID(VolumeGUID, NULL_GUID);
 end;
 
 function TRbDrive.IsEmpty: boolean;

@@ -1,6 +1,11 @@
 
 === Changelog RecBinUnit v2 ===
 
+2016-07-05
++ Added property VolumeGUIDAvailable
++ Demo: Added possibility to add manual entered recyclers
++ Demo: Added icons
+
 2016-07-03
 + Due to new information: Renamed some class names, e.g.
     TRbInfo1Item into TRbInfoAItem
