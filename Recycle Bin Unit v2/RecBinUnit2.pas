@@ -5,7 +5,7 @@ unit RecBinUnit2 platform;
 // E-MAIL: info@daniel-marschall.de                                               //
 // Web:    www.daniel-marschall.de & www.viathinksoft.de                          //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 03 JUL 2016                                                          //
+// Revision: 17 JUL 2016                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successfully tested with:                                                      //
@@ -27,8 +27,6 @@ unit RecBinUnit2 platform;
 // - Remove "$REGION"
 
 // TODO: ReadBuffer überall try-except
-// TODO: Win7 : Drive GUIDs
-// TODO: Win7 : Absolute vs. Relative size limitations
 // TODO: Always check EOF before reading anything?
 // TODO: Don't crash when timestamp is invalid. Do something else instead.
 // TODO: Is it possible to identify a Vista-file that is not named $Ixxxxxx.ext?
@@ -41,7 +39,8 @@ unit RecBinUnit2 platform;
 //       - How does Windows Vista+ react to a RECYCLED\ folder on a FAT device? ==> Win7: is ignored!
 //       - How does Windows XP react to RECYCLED\ folder on a FAT device?
 // TODO: Translate all comments from German to English
-// TODO: do we need this (maybe not all drives have A: till Z:?) http://stackoverflow.com/questions/17110543/how-to-retrieve-the-disk-signature-of-all-the-disks-in-windows-using-delphi-7
+// TODO: Do we need this (maybe not all drives have A: till Z:?) http://stackoverflow.com/questions/17110543/how-to-retrieve-the-disk-signature-of-all-the-disks-in-windows-using-delphi-7
+// TODO: Add a lot of setters for system config stuff
 
 // If enabled, the deletion timestamps will not be converted by the WinAPI.
 {.$DEFINE FILETIME_DELPHI_CODE}
@@ -52,13 +51,13 @@ unit RecBinUnit2 platform;
 interface
 
 uses
-  Windows, SysUtils, Classes, ContNrs, ShellAPI, Registry, Messages;
+  Windows, SysUtils, Classes, ContNrs, ShellAPI, Registry, Messages, Math;
 
 const
-  RECBINUNIT_VERSION = '2016-07-05';
+  RECBINUNIT_VERSION = '2016-07-17';
 
   RECYCLER_CLSID: TGUID = '{645FF040-5081-101B-9F08-00AA002F954E}';
-  NULL_GUID: TGUID      = '{00000000-0000-0000-0000-000000000000}';
+  NULL_GUID:      TGUID = '{00000000-0000-0000-0000-000000000000}';
 
 type
   EAPICallError = class(Exception);
@@ -163,12 +162,20 @@ type
   strict private
     FDriveLetter: Char;
 
-    // will return NULL_GUID in case of an error or if it is not supported
-    function GetVolumeGUID: TGUID;
-    function GetVolumeGUIDAvailable: boolean; protected
+    function OldCapacityPercent(var res: integer): boolean; // in % (0-100)
+    function NewCapacityAbsolute(var res: integer): boolean; // in MB
+
+    function DiskSize: integer; // in MB
+    function DriveNumber: integer;
   strict protected
     function IsFAT: boolean;
     procedure CheckDriveExisting;
+
+    // will return NULL_GUID in case of an error or if it is not supported
+    function GetVolumeGUID: TGUID;
+    function GetVolumeGUIDAvailable: boolean;
+
+    // TODO: get drive serial
   public
     constructor Create(ADriveLetter: Char);
 
@@ -183,12 +190,9 @@ type
     function GetNumItems: int64;
     function IsEmpty: boolean;
 
-    function GetMaxPercentUsage: integer;
+    function GetMaxPercentUsage: Extended; // 0..1
+    function GetMaxAbsoluteUsage: integer; // in MB
     function GetNukeOnDelete: boolean;
-
-    // These functions will check the global configuration and group policy, too.
-    function RecyclerGetPercentUsageAutoDeterminate: integer;
-    function RecyclerIsNukeOnDeleteAutoDeterminate: boolean;
   end;
 
   GPOLICYBOOL = (gpUndefined, gpEnabled, gpDisabled);
@@ -937,7 +941,7 @@ procedure TRbDrive.CheckDriveExisting;
 begin
   // Does the drive exist?
   // see http://www.delphipraxis.net/post2933.html
-  if not GetLogicalDrives and (1 shl DriveLetterToDriveNumber(FDriveLetter)) <> 0 then
+  if not GetLogicalDrives and (1 shl DriveNumber) <> 0 then
   begin
     raise EInvalidDrive.CreateFmt(LNG_DRIVE_NOT_EXISTING, [UpperCase(FDriveLetter)+':']);
   end;
@@ -949,6 +953,16 @@ begin
 
   FDriveLetter := ADriveLetter;
   CheckDriveExisting;
+end;
+
+function TRbDrive.DiskSize: integer;
+begin
+  result := SysUtils.DiskSize(DriveNumber+1 {0 is current, 1 is A}) div (1024*1024);
+end;
+
+function TRbDrive.DriveNumber: integer;
+begin
+  result := DriveLetterToDriveNumber(FDriveLetter);
 end;
 
 function TRbDrive.GetAPIInfo: TSHQueryRBInfo;
@@ -1000,14 +1014,73 @@ begin
   end;
 end;
 
-function TRbDrive.GetMaxPercentUsage: integer;
+function TRbDrive.GetMaxPercentUsage: Extended;
+var
+  abs: integer; // in MB
+  rel: integer; // in % (0-100)
+  gpSetting: integer;
+const
+  DEFAULT_PERCENT = 10; // Windows 95 default
+begin
+  gpSetting := TRecycleBinManager.RecyclerGroupPolicyRecycleBinSize;
+  if gpSetting <> -1 then
+    result := gpSetting / 100
+  else if TRecycleBinManager.UsesGlobalSettings then
+    result := TRecycleBinManager.GetGlobalMaxPercentUsage / 100
+  else if OldCapacityPercent(rel) then
+  begin
+    result := rel / 100;
+  end
+  else if NewCapacityAbsolute(abs) then
+  begin
+    result := abs / DiskSize;
+  end
+  else
+  begin
+    result := DEFAULT_PERCENT / 100;
+  end;
+end;
+
+function TRbDrive.GetMaxAbsoluteUsage: integer;
+var
+  abs: integer; // in MB
+  rel: integer; // in % (0-100)
+  gpSetting: integer;
+const
+  DEFAULT_PERCENT = 10; // Windows 95 default
+begin
+  gpSetting := TRecycleBinManager.RecyclerGroupPolicyRecycleBinSize;
+  if gpSetting <> -1 then
+    result := Ceil(gpSetting/100 * DiskSize)
+  else if TRecycleBinManager.UsesGlobalSettings then
+    result := Ceil(TRecycleBinManager.GetGlobalMaxPercentUsage/100 * DiskSize)
+  else if NewCapacityAbsolute(abs) then
+  begin
+    result := abs;
+  end
+  else if OldCapacityPercent(rel) then
+  begin
+    result := Ceil(rel/100 * DiskSize);
+  end
+  else
+  begin
+    result := Ceil(DEFAULT_PERCENT/100 * DiskSize);
+  end;
+end;
+
+function TRbDrive.OldCapacityPercent(var res: integer): boolean;
 var
   reg: TRegistry;
   purgeInfo: TRbWin95PurgeInfo;
-const
-  RES_DEFAULT = 10; // Windows 95 - Standardwert
 begin
-  result := RES_DEFAULT;
+  if Win32MajorVersion >= 6 then
+  begin
+    // Only available till Windows XP
+    result := false;
+    exit;
+  end;
+
+  result := false;
 
   reg := TRegistry.Create;
   try
@@ -1023,7 +1096,8 @@ begin
         begin
           // Windows 2000 - Informationen liegen aufgeschlüsselt in der Registry
 
-          result := reg.ReadInteger('Percent');
+          res := reg.ReadInteger('Percent');
+          result := true;
         end;
       end
       else
@@ -1034,7 +1108,8 @@ begin
 
           reg.ReadBinaryData('PurgeInfo', purgeInfo, SizeOf(purgeInfo));
 
-          result := purgeInfo.percentDrive[FDriveLetter];
+          res := purgeInfo.percentDrive[FDriveLetter];
+          result := true;
         end;
       end;
 
@@ -1045,27 +1120,36 @@ begin
   end;
 end;
 
-function TRbDrive.RecyclerGetPercentUsageAutoDeterminate: integer;
+function TRbDrive.NewCapacityAbsolute(var res: integer): boolean;
 var
-  gpSetting: integer;
+  reg: TRegistry;
 begin
-  gpSetting := TRecycleBinManager.RecyclerGroupPolicyRecycleBinSize;
-  if gpSetting <> -1 then
-    result := gpSetting
-  else if TRecycleBinManager.UsesGlobalSettings then
-    result := TRecycleBinManager.GetGlobalMaxPercentUsage
-  else
-    result := GetMaxPercentUsage;
-end;
+  if Win32MajorVersion < 6 then
+  begin
+    // Only available since Windows Vista
+    result := false;
+    exit;
+  end;
 
-function TRbDrive.RecyclerIsNukeOnDeleteAutoDeterminate: boolean;
-begin
-  if TRecycleBinManager.RecyclerGroupPolicyNoRecycleFiles = gpEnabled then
-    result := true
-  else if TRecycleBinManager.UsesGlobalSettings then
-    result := TRecycleBinManager.GetGlobalNukeOnDelete
-  else
-    result := GetNukeOnDelete;
+  result := false;
+  
+  reg := TRegistry.Create;
+  try
+    reg.RootKey := HKEY_CURRENT_USER;
+
+    if reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Explorer\BitBucket\Volume') then
+    begin
+      // Windows Vista and upwards
+      if reg.OpenKeyReadOnly(GUIDToString(VolumeGUID)) then
+      begin
+        res := reg.ReadInteger('MaxCapacity'); // in MB
+        result := true;
+      end;
+      reg.CloseKey;
+    end;
+  finally
+    reg.Free;
+  end;
 end;
 
 function TRbDrive.GetNukeOnDelete: boolean;
@@ -1073,43 +1157,64 @@ var
   reg: TRegistry;
   purgeInfo: TRbWin95PurgeInfo;
 const
-  RES_DEFAULT = false; // Windows 95 - Standardwert
+  RES_DEFAULT = false; // Windows 95 default
 begin
-  result := RES_DEFAULT;
+  if TRecycleBinManager.RecyclerGroupPolicyNoRecycleFiles = gpEnabled then
+    result := true
+  else if TRecycleBinManager.UsesGlobalSettings then
+    result := TRecycleBinManager.GetGlobalNukeOnDelete
+  else
+  begin
+    result := RES_DEFAULT;
 
-  reg := TRegistry.Create;
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
+    reg := TRegistry.Create;
+    try
+      reg.RootKey := HKEY_CURRENT_USER;
 
-    // Im Auslieferungszustand von Windows 95 ist dieser Schlüssel nicht vorhanden.
-    // Er wird bei der ersten Änderung der Papierkorb-Einstellungen erstellt.
-    if reg.OpenKeyReadOnly('SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\BitBucket') then
-    begin
-      if reg.OpenKeyReadOnly(FDriveLetter) then
+      if reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Explorer\BitBucket\Volume') then
       begin
-        if reg.ValueExists('NukeOnDelete') then
+        // Windows Vista and upwards
+        if reg.OpenKeyReadOnly(GUIDToString(VolumeGUID)) then
         begin
-          // Windows 2000 - Informationen liegen aufgeschlüsselt in der Registry
-
           result := reg.ReadBool('NukeOnDelete');
         end;
+        reg.CloseKey;
       end
       else
       begin
-        if reg.ValueExists('PurgeInfo') then
+        reg.RootKey := HKEY_LOCAL_MACHINE;
+
+        // Im Auslieferungszustand von Windows 95 ist dieser Schlüssel nicht vorhanden.
+        // Er wird bei der ersten Änderung der Papierkorb-Einstellungen erstellt.
+        if reg.OpenKeyReadOnly('SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\BitBucket') then
         begin
-          // Windows 95 - Kodierte Informationen liegen in PurgeInfo
+          if reg.OpenKeyReadOnly(FDriveLetter) then
+          begin
+            if reg.ValueExists('NukeOnDelete') then
+            begin
+              // Windows 2000 - Informationen liegen aufgeschlüsselt in der Registry
 
-          reg.ReadBinaryData('PurgeInfo', purgeInfo, SizeOf(purgeInfo));
+              result := reg.ReadBool('NukeOnDelete');
+            end;
+          end
+          else
+          begin
+            if reg.ValueExists('PurgeInfo') then
+            begin
+              // Windows 95 - Kodierte Informationen liegen in PurgeInfo
 
-          result := ((purgeInfo.NukeOnDeleteBits shr DriveLetterToDriveNumber(FDriveLetter)) and 1) = 1;
+              reg.ReadBinaryData('PurgeInfo', purgeInfo, SizeOf(purgeInfo));
+
+              result := ((purgeInfo.NukeOnDeleteBits shr DriveNumber) and 1) = 1;
+            end;
+          end;
+
+          reg.CloseKey;
         end;
       end;
-
-      reg.CloseKey;
+    finally
+      reg.Free;
     end;
-  finally
-    reg.Free;
   end;
 end;
 
@@ -1490,6 +1595,13 @@ var
 const
   RES_DEFAULT = 10; // Windows 95 - Standardwert
 begin
+  if Win32MajorVersion >= 6 then
+  begin
+    // Only available till Windows XP
+    result := -1;
+    exit;
+  end;
+
   result := RES_DEFAULT;
 
   reg := TRegistry.Create;
@@ -1528,6 +1640,13 @@ var
 const
   RES_DEFAULT = false; // Windows 95 - Standardwert
 begin
+  if Win32MajorVersion >= 6 then
+  begin
+    // Only available till Windows XP
+    result := false;
+    exit;
+  end;
+
   result := RES_DEFAULT;
 
   reg := TRegistry.Create;
@@ -1575,6 +1694,13 @@ var
 const
   RES_DEFAULT = true; // Windows 95 - Standardwert
 begin
+  if Win32MajorVersion >= 6 then
+  begin
+    // Only available till Windows XP
+    result := false;
+    exit;
+  end;
+
   result := RES_DEFAULT;
 
   reg := TRegistry.Create;

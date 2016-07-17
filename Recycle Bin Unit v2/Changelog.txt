@@ -1,6 +1,10 @@
 
 === Changelog RecBinUnit v2 ===
 
+2016-07-17
++ MaxCapacity can now be retrieved in absolute and relative units.
+  MaxCapacity and NukeOnDelete is now finally Windows Vista compatible.
+
 2016-07-05
 + Added property VolumeGUIDAvailable
 + Demo: Added possibility to add manual entered recyclers
