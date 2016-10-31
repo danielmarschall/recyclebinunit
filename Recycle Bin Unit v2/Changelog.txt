@@ -1,6 +1,9 @@
 
 === Changelog RecBinUnit v2 ===
 
+2016-11-01
++ Fixed memory leak in SID-Unit (thanks to Mikkao for finding this bug)
+
 2016-07-17
 + MaxCapacity can now be retrieved in absolute and relative units.
   MaxCapacity and NukeOnDelete is now finally Windows Vista compatible.
