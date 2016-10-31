@@ -161,8 +161,8 @@ begin
   result := true;
 end;
 
-// http://www.delphipraxis.net/post471470.html
-// Changed
+// Source: http://www.delphipraxis.net/post471470.html
+// Modified
 function GetMySID(): string;
 var
   SID: PSID;
@@ -172,21 +172,25 @@ begin
   SID := nil;
 
   err := _getAccountSid('', _getLoginNameW(), SID);
-  if err > 0 then
-  begin
-    EAPICallError.Create('_getAccountSid:' + SysErrorMessage(err));
-    Exit;
-  end;
+  try
+    if err > 0 then
+    begin
+      EAPICallError.Create('_getAccountSid:' + SysErrorMessage(err));
+      Exit;
+    end;
 
-  if _ConvertSidToStringSidA(SID, strSID) then
-  begin
-    result := string(strSID);
-    Exit;
-  end;
+    if _ConvertSidToStringSidA(SID, strSID) then
+    begin
+      result := string(strSID);
+      Exit;
+    end;
 
-  if not _NT_SidToString(SID, result) then
-  begin
-    EAPICallError.Create('_NT_SidToString'); // TODO: RaiseLastOsError???
+    if not _NT_SidToString(SID, result) then
+    begin
+      EAPICallError.Create('_NT_SidToString'); // TODO: RaiseLastOsError???
+    end;
+  finally
+    if Assigned(SID) then FreeMemory(SID);
   end;
 end;
 
