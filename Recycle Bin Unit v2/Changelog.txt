@@ -4,6 +4,9 @@
 2022-06-30
 + Added support for $Ixxx "Vista" format 2 files (added somewhere in a Windows 10 build)
   The difference towards $Ixxx "Vista" format 1 files is that the filename is not limited to MAX_PATH anymore. (New limit 0xFFFFFFFD)
++ RecyclerListing.exe (Demo application) marks missing physical files (happens for Vista format very often)
+  and can hide them
++ Added XP Theme to the demo application
 
 2016-11-01
 + Fixed memory leak in SID-Unit (thanks to Mikkao for finding this bug)

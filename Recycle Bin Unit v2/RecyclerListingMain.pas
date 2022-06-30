@@ -16,6 +16,7 @@ type
     OpenDialog1: TOpenDialog;
     LabeledEdit1: TLabeledEdit;
     ImageList1: TImageList;
+    CheckBox2: TCheckBox;
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -73,7 +74,7 @@ begin
       else
         nDrive := TreeView1.Items.AddChildObject(localRecyclersNode, 'Drive '+drive.DriveLetter+':', drive);
       nDrive.ImageIndex := 6;
-      nDrive.SelectedIndex := 6;
+      nDrive.SelectedIndex := nDrive.ImageIndex;
 
       bins.Clear;
       if CheckBox1.Checked then
@@ -86,16 +87,23 @@ begin
 
         nBin := TreeView1.Items.AddChildObject(nDrive, bin.FileOrDirectory, bin);
         nBin.ImageIndex := 4;
-        nBin.SelectedIndex := 4;
+        nBin.SelectedIndex := nBin.ImageIndex;
 
         items.Clear;
         bin.ListItems(items);
         for iItem := 0 to items.Count - 1 do
         begin
           item := items.Items[iItem] as TRbRecycleBinItem;
+
+          if not FileExists(item.PhysicalFile) and CheckBox2.Checked then continue;
+
           nItem := TreeView1.Items.AddChildObject(nBin, item.Source, bin);
-          nItem.ImageIndex := 0;
-          nItem.SelectedIndex := 0;
+
+          if FileExists(item.PhysicalFile) then
+            nItem.ImageIndex := 0
+          else
+            nItem.ImageIndex := 8;
+          nItem.SelectedIndex := nItem.ImageIndex;
         end;
       end;
     end;
@@ -131,9 +139,16 @@ begin
     for iItem := 0 to items.Count - 1 do
     begin
       item := items.Items[iItem] as TRbRecycleBinItem;
+
+      if not FileExists(item.PhysicalFile) and CheckBox2.Checked then continue;
+
       nItem := TreeView1.Items.AddChildObject(nBin, item.Source, bin);
-      nItem.ImageIndex := 0;
-      nItem.SelectedIndex := 0;
+
+      if FileExists(item.PhysicalFile) then
+        nItem.ImageIndex := 0
+      else
+        nItem.ImageIndex := 8;
+      nItem.SelectedIndex := nItem.ImageIndex;
     end;
   finally
     items.Free;
@@ -146,11 +161,11 @@ procedure TRecyclerListingMainForm.FormShow(Sender: TObject);
 begin
   localRecyclersNode := TreeView1.Items.Add(nil, 'Local recyclers');
   localRecyclersNode.ImageIndex := 2;
-  localRecyclersNode.SelectedIndex := 2;
+  localRecyclersNode.SelectedIndex := localRecyclersNode.ImageIndex;
 
   individualRecyclersNode := TreeView1.Items.Add(nil, 'Manually added recycle bins');
   individualRecyclersNode.ImageIndex := 2;
-  individualRecyclersNode.SelectedIndex := 2;
+  individualRecyclersNode.SelectedIndex := individualRecyclersNode.ImageIndex;
 end;
 
 end.
