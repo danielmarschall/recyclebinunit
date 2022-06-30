@@ -22,7 +22,9 @@
 // Windows 2003 Server EE SP1                                                     //
 // Windows Vista                                                                  //
 // Windows 7                                                                      //
-// Windows 10                                                                     //
+////////////////////////////////////////////////////////////////////////////////////
+// DOES **NOT** WORK WITH "VERSION 2" INDEX FILES USED IN LATER VERSIONS OF WIN10 //
+// USE RECYCLE BIN UNIT V2 INSTEAD!                                               //
 ////////////////////////////////////////////////////////////////////////////////////
 //                                                                                //
 //  Needs Delphi 4 or higher. If you are using Delphi 4 or 5, you can not use the //
@@ -2283,9 +2285,11 @@ var
   reg: TRegistry;
   rbuf: array[0..255] of byte;
 
-  dwResult: DWORD;
+  //dwResult: DWORD;
+  lpdwResult: PDWORD_PTR;
 begin
   PSHGetSetSettings := nil;
+  lpdwResult := nil;
 
   RBHandle := LoadLibrary(shell32);
   if(RBHandle <> 0) then
@@ -2308,7 +2312,7 @@ begin
     SendMessageTimeout (
       HWND_BROADCAST, WM_SETTINGCHANGE,
       0, lParam (pChar ('ShellState')),
-      SMTO_ABORTIFHUNG, 5000, dwResult
+      SMTO_ABORTIFHUNG, 5000, lpdwResult(*dwResult*)
     );
   end
   else
@@ -2331,7 +2335,7 @@ begin
         SendMessageTimeout (
           HWND_BROADCAST, WM_SETTINGCHANGE,
           0, lParam (pChar ('ShellState')),
-          SMTO_ABORTIFHUNG, 5000, dwResult
+          SMTO_ABORTIFHUNG, 5000, lpdwResult(*dwResult*)
         );
 
         reg.CloseKey;
@@ -2678,7 +2682,7 @@ end;
 function RecyclerGlobalIsNukeOnDelete: boolean;
 var
   reg: TRegistry;
-  dump: string;
+  dump: AnsiString;
 const
   RES_DEFAULT = false;
 begin
@@ -2702,7 +2706,7 @@ begin
 
         // See comment at RecyclerSpecificIsNukeOnDelete()
 
-        dump := _registryReadDump(reg, 'PurgeInfo');
+        dump := AnsiString(_registryReadDump(reg, 'PurgeInfo'));
         result := GetAnsiCharBit(dump[68], 3);
       end
       else
@@ -2722,7 +2726,7 @@ end;
 function RecyclerSpecificIsNukeOnDelete(Drive: Char): boolean;
 var
   reg: TRegistry;
-  dump: string;
+  dump: AnsiString;
   d: Byte;
 const
   RES_DEFAULT = false;
@@ -2751,7 +2755,7 @@ begin
         begin
           // Windows 95 - Verschlüsselte Informationen liegen in PurgeInfo
 
-          dump := _registryReadDump(reg, 'PurgeInfo');
+          dump := AnsiString(_registryReadDump(reg, 'PurgeInfo'));
 
           // NOT tested, only theoretical! My idea about the possible structure is:
           //
@@ -2948,6 +2952,7 @@ begin
     begin
       // Since Windows Vista, SHQueryRecycleBin will fail with E_FAIL (80004005)
       // if Path is a floppy or CD drive...
+      // Windows 10: Error 0x8007003 for Path 'C:\'
       raise EAPICallError.CreateFmt(LNG_API_CALL_ERROR, [Format(LNG_ERROR_CODE, [C_SHQueryRecycleBin, Path, '0x'+IntToHex(res, 2*SizeOf(HRESULT))])]);
     end;
   end
