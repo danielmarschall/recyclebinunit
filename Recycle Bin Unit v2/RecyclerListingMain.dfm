@@ -46,9 +46,9 @@ object RecyclerListingMainForm: TRecyclerListingMainForm
     object CheckBox1: TCheckBox
       Left = 8
       Top = 6
-      Width = 129
+      Width = 137
       Height = 17
-      Caption = 'Only own recyclers'
+      Caption = 'Only own recycler bins'
       Checked = True
       State = cbChecked
       TabOrder = 1
@@ -75,7 +75,7 @@ object RecyclerListingMainForm: TRecyclerListingMainForm
       TabOrder = 3
     end
     object CheckBox2: TCheckBox
-      Left = 143
+      Left = 183
       Top = 6
       Width = 146
       Height = 17

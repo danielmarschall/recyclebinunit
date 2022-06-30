@@ -198,6 +198,7 @@ begin
     // File
     item := TRbRecycleBinItem(TreeView1.Selected.Data);
     // TODO: Does not work if the file type is unknown
+    // TODO: Maybe we should add a feature to drag'n'drop a file/folder out of RecycleBinUnit into the explorer (With options copy or move, depending on the ShiftState) 
     ShellExecute(Handle, 'open', PChar(item.PhysicalFile), '', '', SW_NORMAL);
   end;
   if TreeView1.Selected.ImageIndex = 10 then

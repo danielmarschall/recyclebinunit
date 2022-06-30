@@ -98,7 +98,7 @@ type
     property IndexFile: string read FIndexFile;
     property RemovedEntry: boolean read FRemovedEntry; // the file is NOT in the recycle bin anymore!
 
-    // Attention: There are not an official API calls. The delete and recover
+    // Attention: There are no official API calls. The delete and recover
     // functions might fail and/or damage the shell cache. Handle with care!
     function DeleteFile: boolean; virtual; abstract;
     function RecoverFile: boolean; virtual; abstract;
@@ -368,6 +368,18 @@ type
   TSHEmptyRecycleBin = function(Wnd: HWND; pszRootPath: PChar; dwFlags: DWORD): HRESULT; stdcall;
   TSHGetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD); stdcall;
   TSHGetSetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD; bSet: BOOL); stdcall;
+
+procedure AnsiRemoveNulChars(var s: AnsiString);
+begin
+  while (Length(s) > 0) and (s[Length(s)] = #0) do
+    s := Copy(s, 1, Length(s)-1);
+end;
+
+procedure UnicodeRemoveNulChars(var s: WideString);
+begin
+  while (Length(s) > 0) and (s[Length(s)] = #0) do
+    s := Copy(s, 1, Length(s)-1);
+end;
 
 function GetDriveGUID(driveLetter: Char; var guid: TGUID): DWORD;
 var
@@ -1372,6 +1384,11 @@ begin
   FID := IntToStr(r.recordNumber);
   FDeletionTime := FileTimeToDateTime(r.deletionTime);
   FOriginalSize := r.originalSize;
+
+  // Remove #0 at the end. There are some bugs where #0 is added to ANSI/Unicode read paths?! (probably in the ReadVista stuff)
+  // TODO: Instead of using this workaround, fix "SourceUnicode" and "SourceAnsi" in the first place!
+  AnsiRemoveNulChars(FSourceAnsi);
+  UnicodeRemoveNulChars(FSourceUnicode);
 end;
 
 function TRbInfoAItem.DeleteFile: boolean;
@@ -1433,6 +1450,11 @@ begin
   FSourceDrive := Chr(Ord('A') + r.sourceDrive);
   FDeletionTime := FileTimeToDateTime(r.deletionTime);
   FOriginalSize := r.originalSize;
+
+  // Remove #0 at the end. There are some bugs where #0 is added to ANSI/Unicode read paths?! (probably in the ReadVista stuff)
+  // TODO: Instead of using this workaround, fix "SourceUnicode" and "SourceAnsi" in the first place!
+  AnsiRemoveNulChars(FSourceAnsi);
+  UnicodeRemoveNulChars(FSourceUnicode);
 end;
 
 function TRbInfoWItem.DeleteFile: boolean;
@@ -1530,6 +1552,11 @@ begin
   begin
     raise Exception.CreateFmt('Invalid Vista index format version %d', [version]);
   end;
+
+  // Remove #0 at the end. There are some bugs where #0 is added to ANSI/Unicode read paths?! (probably in the ReadVista stuff)
+  // TODO: Instead of using this workaround, fix "SourceUnicode" and "SourceAnsi" in the first place!
+  AnsiRemoveNulChars(FSourceAnsi);
+  UnicodeRemoveNulChars(FSourceUnicode);
 end;
 
 function TRbVistaItem.DeleteFile: boolean;
@@ -2390,11 +2417,6 @@ begin
   {$ELSE}
   result := SourceAnsi;
   {$ENDIF}
-
-  // Remove #0 at the end. There are some bugs where #0 is added to ANSI/Unicode read paths?! (probably in the ReadVista stuff)
-  // TODO: Instead of using this workaround, fix "SourceUnicode" and "SourceAnsi"!
-  while (Length(result) > 0) and (result[Length(result)] = #0) do
-    result := Copy(result, 1, Length(result)-1);
 end;
 
 end.
