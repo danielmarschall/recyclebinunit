@@ -369,6 +369,27 @@ type
   TSHGetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD); stdcall;
   TSHGetSetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD; bSet: BOOL); stdcall;
 
+function WideCharArrayToWideString(x: array of WideChar): WideString;
+var
+  i: integer;
+begin
+  // In x86, the "cast" works with WideString.
+  // In x64, it does not work (outputs empty string, without compiler warning!)
+  // So, we created this fake-cast
+  SetLength(result, Length(x));
+  for i := 0 to Length(x)-1 do
+    result[i+1] := x[i];
+end;
+
+function AnsiCharArrayToWideString(x: array of AnsiChar): WideString;
+var
+  i: integer;
+begin
+  SetLength(result, Length(x));
+  for i := 0 to Length(x)-1 do
+    result[i+1] := WideChar(x[i]);
+end;
+
 procedure AnsiRemoveNulChars(var s: AnsiString);
 begin
   while (Length(s) > 0) and (s[Length(s)] = #0) do
@@ -1380,7 +1401,7 @@ begin
   end;
 
   FSourceAnsi := r.sourceAnsi;
-  FSourceUnicode := WideString(r.sourceAnsi); // Unicode does not exist in INFO(1) structure
+  FSourceUnicode := AnsiCharArrayToWideString(r.sourceAnsi); // Unicode does not exist in INFO(1) structure
   FID := IntToStr(r.recordNumber);
   FDeletionTime := FileTimeToDateTime(r.deletionTime);
   FOriginalSize := r.originalSize;
@@ -1526,8 +1547,8 @@ begin
   begin
     stream.Seek(0, soBeginning);
     stream.ReadBuffer(r1, SizeOf(r1));
-    FSourceAnsi := AnsiString(r1.sourceUnicode); // Invalid chars are automatically converted into '?'
-    FSourceUnicode := WideString(r1.sourceUnicode);
+    FSourceAnsi := AnsiString(WideCharArrayToWideString(r1.sourceUnicode)); // Invalid chars are automatically converted into '?'
+    FSourceUnicode := WideCharArrayToWideString(r1.sourceUnicode);
     FID := ''; // will be added manually (at the constructor)
     FSourceDrive := r1.sourceUnicode[1];
     FDeletionTime := FileTimeToDateTime(r1.deletionTime);
@@ -1538,11 +1559,11 @@ begin
     stream.Seek(0, soBeginning);
     stream.ReadBuffer(r2, SizeOf(r2));
 
-    SetLength(r2SourceUnicode, 2*(r2.SourceCountChars-1));
-    stream.Read(r2SourceUnicode[0], 2*(r2.sourceCountChars-1));
+    SetLength(r2SourceUnicode, SizeOf(WideChar)*(r2.SourceCountChars-1));
+    stream.Read(r2SourceUnicode[0], SizeOf(WideChar)*(r2.sourceCountChars-1));
 
-    FSourceAnsi := AnsiString(WideString(r2sourceUnicode)); // Invalid chars are automatically converted into '?'
-    FSourceUnicode := WideString(r2sourceUnicode);
+    FSourceAnsi := AnsiString(WideCharArrayToWideString(r2sourceUnicode)); // Invalid chars are automatically converted into '?'
+    FSourceUnicode := WideCharArrayToWideString(r2sourceUnicode);
     FID := ''; // will be added manually (at the constructor)
     FSourceDrive := r2sourceUnicode[1];
     FDeletionTime := FileTimeToDateTime(r2.deletionTime);

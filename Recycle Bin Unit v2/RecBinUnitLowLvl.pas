@@ -52,6 +52,7 @@ type
   end;
 
 type
+  // Introduced in Windows Vista
   PRbVistaRecord1 = ^TRbVistaRecord1;
   TRbVistaRecord1 = record
     version: int64; // Always 01 00 00 00 00 00 00 00
@@ -61,11 +62,13 @@ type
   end;
 
 type
+  // Introduced somewhere in a Win10 release
   PRbVistaRecord2Head = ^TRbVistaRecord2Head;
   TRbVistaRecord2Head = record
     version: int64; // Always 02 00 00 00 00 00 00 00
     originalSize: int64;
     deletionTime: FILETIME;
+    (* sourceUnicode: BSTR; *)
     sourceCountChars: DWORD; // including NUL
     //sourceUnicode: array[0..sourceCountChars+1] of WideChar;
   end;

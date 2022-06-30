@@ -191,7 +191,6 @@ end;
 procedure TRecyclerListingMainForm.TreeView1DblClick(Sender: TObject);
 var
   item: TRbRecycleBinItem;
-  tempFile, tempDir: string;
 begin
   if TreeView1.Selected.ImageIndex = 0 then
   begin
