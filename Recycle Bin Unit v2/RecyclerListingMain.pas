@@ -1,5 +1,7 @@
 unit RecyclerListingMain;
 
+// TODO: Doubleclick to open file!
+
 interface
 
 uses
@@ -55,6 +57,9 @@ var
   iItem: integer;
   item: TRbRecycleBinItem;
   nItem: TTreeNode;
+  sCaption: string;
+resourcestring
+  S_DRIVE = 'Drive %s';
 begin
   localRecyclersNode.DeleteChildren;
 
@@ -70,9 +75,9 @@ begin
       drive := drives.Items[iDrive] as TRbDrive;
 
       if drive.VolumeGUIDAvailable then
-        nDrive := TreeView1.Items.AddChildObject(localRecyclersNode, 'Drive '+drive.DriveLetter+': ' + GUIDToString(drive.VolumeGUID), drive)
+        nDrive := TreeView1.Items.AddChildObject(localRecyclersNode, Format(S_DRIVE, [drive.DriveLetter])+': ' + GUIDToString(drive.VolumeGUID), drive)
       else
-        nDrive := TreeView1.Items.AddChildObject(localRecyclersNode, 'Drive '+drive.DriveLetter+':', drive);
+        nDrive := TreeView1.Items.AddChildObject(localRecyclersNode, Format(S_DRIVE, [drive.DriveLetter])+':', drive);
       nDrive.ImageIndex := 6;
       nDrive.SelectedIndex := nDrive.ImageIndex;
 
@@ -95,12 +100,18 @@ begin
         begin
           item := items.Items[iItem] as TRbRecycleBinItem;
 
-          if not FileExists(item.PhysicalFile) and CheckBox2.Checked then continue;
+          if not FileExists(item.PhysicalFile) and
+             not DirectoryExists(item.PhysicalFile) and
+             CheckBox2.Checked then continue;
 
-          nItem := TreeView1.Items.AddChildObject(nBin, item.Source, bin);
+          sCaption := item.Source;
+          if item.IndexFile <> '' then sCaption := sCaption + ' ('+ExtractFileName(item.IndexFile)+')';
+          nItem := TreeView1.Items.AddChildObject(nBin, sCaption, bin);
 
           if FileExists(item.PhysicalFile) then
             nItem.ImageIndex := 0
+          else if DirectoryExists(item.PhysicalFile) then
+            nItem.ImageIndex := 10 // TODO: Feature: Read folder contents and display them in this graph. (Also change icon to "open folder")
           else
             nItem.ImageIndex := 8;
           nItem.SelectedIndex := nItem.ImageIndex;
@@ -126,6 +137,7 @@ var
   iItem: integer;
   item: TRbRecycleBinItem;
   nItem: TTreeNode;
+  sCaption: string;
 begin
   bin := TRbRecycleBin.Create(LabeledEdit1.Text);
 
@@ -140,12 +152,18 @@ begin
     begin
       item := items.Items[iItem] as TRbRecycleBinItem;
 
-      if not FileExists(item.PhysicalFile) and CheckBox2.Checked then continue;
+      if not FileExists(item.PhysicalFile) and
+         not DirectoryExists(item.PhysicalFile) and
+         CheckBox2.Checked then continue;
 
-      nItem := TreeView1.Items.AddChildObject(nBin, item.Source, bin);
+      sCaption := item.Source;
+      if item.IndexFile <> '' then sCaption := sCaption + ' ('+ExtractFileName(item.IndexFile)+')';
+      nItem := TreeView1.Items.AddChildObject(nBin, sCaption, bin);
 
       if FileExists(item.PhysicalFile) then
         nItem.ImageIndex := 0
+      else if DirectoryExists(item.PhysicalFile) then
+        nItem.ImageIndex := 10 // TODO: Feature: Read folder contents and display them in this graph. (Also change icon to "open folder")
       else
         nItem.ImageIndex := 8;
       nItem.SelectedIndex := nItem.ImageIndex;
@@ -158,12 +176,15 @@ begin
 end;
 
 procedure TRecyclerListingMainForm.FormShow(Sender: TObject);
+resourcestring
+  S_LOCAL_RECYCLE_BINS = 'Local recycle bins';
+  S_MANUAL_RECYCLE_BINS ='Manually added recycle bins';
 begin
-  localRecyclersNode := TreeView1.Items.Add(nil, 'Local recyclers');
+  localRecyclersNode := TreeView1.Items.Add(nil, S_LOCAL_RECYCLE_BINS);
   localRecyclersNode.ImageIndex := 2;
   localRecyclersNode.SelectedIndex := localRecyclersNode.ImageIndex;
 
-  individualRecyclersNode := TreeView1.Items.Add(nil, 'Manually added recycle bins');
+  individualRecyclersNode := TreeView1.Items.Add(nil, S_MANUAL_RECYCLE_BINS);
   individualRecyclersNode.ImageIndex := 2;
   individualRecyclersNode.SelectedIndex := individualRecyclersNode.ImageIndex;
 end;

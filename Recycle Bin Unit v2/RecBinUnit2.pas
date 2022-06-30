@@ -90,7 +90,7 @@ type
     property PhysicalFile: string read GetPhysicalFile;
     property SourceAnsi: AnsiString read FSourceAnsi;
     property SourceUnicode: WideString read FSourceUnicode;
-    property Source: string read GetSource; // will bei either ANSI or Unicode, sepending on the Delphi version
+    property Source: string read GetSource; // will bei either ANSI or Unicode, depending on the Delphi version
     property ID: string read FID;
     property SourceDrive: Char read FSourceDrive;
     property DeletionTime: TDateTime read FDeletionTime;
@@ -2390,6 +2390,11 @@ begin
   {$ELSE}
   result := SourceAnsi;
   {$ENDIF}
+
+  // Remove #0 at the end. There are some bugs where #0 is added to ANSI/Unicode read paths?! (probably in the ReadVista stuff)
+  // TODO: Instead of using this workaround, fix "SourceUnicode" and "SourceAnsi"!
+  while (Length(result) > 0) and (result[Length(result)] = #0) do
+    result := Copy(result, 1, Length(result)-1);
 end;
 
 end.
