@@ -4,6 +4,14 @@
 ATTENTION! This unit is not developed anymore.
            Please use the new version RecBinUnit2.pas , which is Object-oriented.
 
+
+2022-06-30 ("Special release for important bug fixes", although it is not supported anymore!)
++ Added support for $Ixxx "Vista" format 2 files (added somewhere in a Windows 10 build)
+  The difference towards $Ixxx "Vista" format 1 files is that the filename is not limited to MAX_PATH anymore. (New limit 0xFFFFFFFD)
++ Added XP Theme to the demo application
++ Unicode Ready
++ 64 bit Ready
+
 2016-07-01 (current version)
 + RecyclerRemoveItem() does now correctly delete directories.
 

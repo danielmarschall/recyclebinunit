@@ -7,6 +7,8 @@ uses
 
 {$R *.res}
 
+{$R XPManifest.res}
+
 begin
   Application.Initialize;
   Application.Title := 'Recycle Bin Example';

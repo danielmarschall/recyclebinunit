@@ -9,7 +9,7 @@
 // E-MAIL: info@daniel-marschall.de                                               //
 // WEB:    www.daniel-marschall.de                                                //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 01 NOV 2016                                                          //
+// Revision: 30 Jun 2022                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successfully tested with:                                                      //
@@ -22,9 +22,8 @@
 // Windows 2003 Server EE SP1                                                     //
 // Windows Vista                                                                  //
 // Windows 7                                                                      //
-////////////////////////////////////////////////////////////////////////////////////
-// DOES **NOT** WORK WITH "VERSION 2" INDEX FILES USED IN LATER VERSIONS OF WIN10 //
-// USE RECYCLE BIN UNIT V2 INSTEAD!                                               //
+// Windows 10 (version 1 and version 2 format)                                    //
+// Windows 11                                                                     //
 ////////////////////////////////////////////////////////////////////////////////////
 //                                                                                //
 //  Needs Delphi 4 or higher. If you are using Delphi 4 or 5, you can not use the //
@@ -135,7 +134,12 @@ type
   EAPICallError = class(Exception);
 
   PSHQueryRBInfo = ^TSHQueryRBInfo;
+  {$IFDEF WIN64}
+  // ATTENTION! MUST NOT BE PACKED! Alignment for 64 bit must be 8 and for 32 bit must be 4
+  TSHQueryRBInfo = record
+  {$ELSE}
   TSHQueryRBInfo = packed record
+  {$ENDIF}
     cbSize      : dword;
     i64Size     : int64;
     i64NumItems : int64;
@@ -863,9 +867,6 @@ end;
 // VISTA AND WINDOWS 7 FUNCTIONS, INTERNAL USED
 // **********************************************************
 
-const
-  vista_valid_index_size = $220; // 544
-
 function _isFileVistaRealfile(filename: string): boolean;
 begin
   result := uppercase(copy(extractfilename(filename), 0, 2)) = '$R';
@@ -920,10 +921,7 @@ begin
   begin
     if (sr.Name <> '.') and (sr.Name <> '..') then
     begin
-      if sr.Size = vista_valid_index_size then
-      begin
-        result.Add(copy(sr.name, 3, length(sr.name)-2));
-      end;
+      result.Add(copy(sr.name, 3, length(sr.name)-2));
     end;
     r := FindNext(sr);
   end;
@@ -954,6 +952,7 @@ function _VistaGetSourceDrive(infofile: string): char;
 var
   fs: TFileStream;
   tmp: string;
+  version: DWORD;
 const
   drive_vista_position = $18;
 begin
@@ -965,6 +964,9 @@ begin
 
   fs := TFileStream.Create(tmp, fmOpenRead);
   try
+    fs.ReadBuffer(version, 4);
+    if version > 2 then
+      raise Exception.CreateFmt('Unexpeceted version %d of Vista index file', [version]);
     fs.seek(drive_vista_position, soFromBeginning);
     result := _readChar(fs);
   finally
@@ -977,6 +979,7 @@ function _VistaGetDateTime(infofile: string): TDateTime;
 var
   fs: TFileStream;
   tmp: string;
+  version: DWORD;
 const
   timestamp_vista_position = $10;
 begin
@@ -988,6 +991,9 @@ begin
 
   fs := TFileStream.Create(tmp, fmOpenRead);
   try
+    fs.ReadBuffer(version, 4);
+    if version > 2 then
+      raise Exception.CreateFmt('Unexpeceted version %d of Vista index file', [version]);
     fs.seek(timestamp_vista_position, soFromBeginning);
     result := _fileTimeToDateTime(_readInt64(fs));
   finally
@@ -1000,8 +1006,10 @@ function _VistaGetSourceUnicode(infofile: string): string;
 var
   fs: TFileStream;
   tmp: string;
+  version: DWORD;
 const
-  unicode_vista_position = $18;
+  unicode_vista_position_v1 = $18;
+  unicode_vista_position_v2 = $1C;
 begin
   result := '';
 
@@ -1011,7 +1019,14 @@ begin
 
   fs := TFileStream.Create(tmp, fmOpenRead);
   try
-    fs.seek(unicode_vista_position, soFromBeginning);
+    fs.ReadBuffer(version, 4);
+    if version = 2 then
+      // Note: This is not the official way to read the source. Actually, you should check the size and only read this specified size
+      fs.seek(unicode_vista_position_v2, soFromBeginning)
+    else if version = 1 then
+      fs.seek(unicode_vista_position_v1, soFromBeginning)
+    else
+      raise Exception.CreateFmt('Unexpeceted version %d of Vista index file', [version]);
     result := _readNullTerminatedWideString(fs);
   finally
     fs.free;
@@ -1022,6 +1037,7 @@ function _VistaOriginalSize(infofile: string): integer;
 var
   fs: TFileStream;
   tmp: string;
+  version: DWORD;
 const
   size_vista_position = $8;
 begin
@@ -1033,6 +1049,9 @@ begin
 
   fs := TFileStream.Create(tmp, fmOpenRead);
   try
+    fs.ReadBuffer(version, 4);
+    if version > 2 then
+      raise Exception.CreateFmt('Unexpeceted version %d of Vista index file', [version]);
     fs.seek(size_vista_position, soFromBeginning);
     result := _readInt32(fs);
   finally
@@ -1067,14 +1086,9 @@ function _VistaIsValid(infofile: string): boolean;
 var
   tmp: string;
 begin
-  result := false;
-
   tmp := infofile;
   tmp := _VistaChangeRealfileToIndexfile(tmp);
-  if not fileexists(tmp) then exit;
-
-  // Check the file length
-  result := _FileSize(tmp) = vista_valid_index_size;
+  result := fileexists(tmp);
 end;
 
 // **********************************************************
@@ -2116,14 +2130,18 @@ var
   PSHEmptyRecycleBin: TSHEmptyRecycleBin;
   LibHandle: THandle;
 const
-  C_SHEmptyRecycleBinA = 'SHEmptyRecycleBinA';
+  {$IFDEF UNICODE}
+  C_SHEmptyRecycleBin = 'SHEmptyRecycleBinW';
+  {$ELSE}
+  C_SHEmptyRecycleBin = 'SHEmptyRecycleBinA';
+  {$ENDIF}
 begin
   result := true;
   LibHandle := LoadLibrary(shell32) ;
   try
     if LibHandle <> 0 then
     begin
-      @PSHEmptyRecycleBin:= GetProcAddress(LibHandle, C_SHEmptyRecycleBinA);
+      @PSHEmptyRecycleBin:= GetProcAddress(LibHandle, C_SHEmptyRecycleBin);
       if @PSHEmptyRecycleBin <> nil then
       begin
         PSHEmptyRecycleBin(hInstance, nil, flags);
@@ -2910,7 +2928,11 @@ begin
 end;
 
 const
+  {$IFDEF UNICODE}
+  C_SHQueryRecycleBin = 'SHQueryRecycleBinW';
+  {$ELSE}
   C_SHQueryRecycleBin = 'SHQueryRecycleBinA';
+  {$ENDIF}
 
 type
   TSHQueryRecycleBin = function(pszRootPath: LPCTSTR;
@@ -2952,7 +2974,6 @@ begin
     begin
       // Since Windows Vista, SHQueryRecycleBin will fail with E_FAIL (80004005)
       // if Path is a floppy or CD drive...
-      // Windows 10: Error 0x8007003 for Path 'C:\'
       raise EAPICallError.CreateFmt(LNG_API_CALL_ERROR, [Format(LNG_ERROR_CODE, [C_SHQueryRecycleBin, Path, '0x'+IntToHex(res, 2*SizeOf(HRESULT))])]);
     end;
   end
@@ -3140,7 +3161,7 @@ end;
 
 function RecyclerLibraryVersion: string;
 begin
-  result := 'ViaThinkSoft Recycle Bin Unit [01 JUL 2016]';
+  result := 'ViaThinkSoft Recycle Bin Unit [30 JUN 2022]';
 end;
 
 end.
