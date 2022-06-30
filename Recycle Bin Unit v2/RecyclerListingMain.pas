@@ -1,7 +1,5 @@
 unit RecyclerListingMain;
 
-// TODO: Doubleclick to open file!
-
 interface
 
 uses
@@ -22,6 +20,7 @@ type
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure TreeView1DblClick(Sender: TObject);
   private
     localRecyclersNode: TTreeNode;
     individualRecyclersNode: TTreeNode;
@@ -35,7 +34,7 @@ implementation
 {$R *.dfm}
 
 uses
-  RecBinUnit2, ContNrs, SIDUnit;
+  RecBinUnit2, ContNrs, SIDUnit, ShellAPI;
 
 // TODO: SID Namen auflösen und dementsprechend anzeigen
 // TODO: zu jedem element mehr informationen anzeigen, nicht nur den ursprungsnamen
@@ -61,12 +60,12 @@ var
 resourcestring
   S_DRIVE = 'Drive %s';
 begin
-  localRecyclersNode.DeleteChildren;
+  localRecyclersNode.DeleteChildren; // TODO: Will the objects be freed? This is important to avoid memory leaks.
 
   TreeView1.Items.BeginUpdate;
-  drives := TObjectList.Create(true);
-  bins := TObjectList.Create(true);
-  items := TObjectList.Create(true);
+  drives := TObjectList.Create(false);
+  bins := TObjectList.Create(false);
+  items := TObjectList.Create(false);
   try
     drives.Clear;
     TRecycleBinManager.ListDrives(drives);
@@ -105,13 +104,13 @@ begin
              CheckBox2.Checked then continue;
 
           sCaption := item.Source;
-          if item.IndexFile <> '' then sCaption := sCaption + ' ('+ExtractFileName(item.IndexFile)+')';
-          nItem := TreeView1.Items.AddChildObject(nBin, sCaption, bin);
+          if item is TRbVistaItem (*item.IndexFile <> ''*) then sCaption := sCaption + ' ('+ExtractFileName(item.IndexFile)+')';
+          nItem := TreeView1.Items.AddChildObject(nBin, sCaption, item);
 
           if FileExists(item.PhysicalFile) then
             nItem.ImageIndex := 0
           else if DirectoryExists(item.PhysicalFile) then
-            nItem.ImageIndex := 10 // TODO: Feature: Read folder contents and display them in this graph. (Also change icon to "open folder")
+            nItem.ImageIndex := 10 // TODO: Feature: Read folder contents and display them in this treeview. (Also change icon to "open folder")
           else
             nItem.ImageIndex := 8;
           nItem.SelectedIndex := nItem.ImageIndex;
@@ -144,7 +143,7 @@ begin
   nBin := TreeView1.Items.AddChildObject(individualRecyclersNode, bin.FileOrDirectory, bin);
   individualRecyclersNode.Expand(false);
 
-  items := TObjectList.Create(true);
+  items := TObjectList.Create(false);
   try
     items.Clear;
     bin.ListItems(items);
@@ -157,13 +156,13 @@ begin
          CheckBox2.Checked then continue;
 
       sCaption := item.Source;
-      if item.IndexFile <> '' then sCaption := sCaption + ' ('+ExtractFileName(item.IndexFile)+')';
-      nItem := TreeView1.Items.AddChildObject(nBin, sCaption, bin);
+      if item is TRbVistaItem (*item.IndexFile <> ''*) then sCaption := sCaption + ' ('+ExtractFileName(item.IndexFile)+')';
+      nItem := TreeView1.Items.AddChildObject(nBin, sCaption, item);
 
       if FileExists(item.PhysicalFile) then
         nItem.ImageIndex := 0
       else if DirectoryExists(item.PhysicalFile) then
-        nItem.ImageIndex := 10 // TODO: Feature: Read folder contents and display them in this graph. (Also change icon to "open folder")
+        nItem.ImageIndex := 10 // TODO: Feature: Read folder contents and display them in this treeview. (Also change icon to "open folder")
       else
         nItem.ImageIndex := 8;
       nItem.SelectedIndex := nItem.ImageIndex;
@@ -187,6 +186,26 @@ begin
   individualRecyclersNode := TreeView1.Items.Add(nil, S_MANUAL_RECYCLE_BINS);
   individualRecyclersNode.ImageIndex := 2;
   individualRecyclersNode.SelectedIndex := individualRecyclersNode.ImageIndex;
+end;
+
+procedure TRecyclerListingMainForm.TreeView1DblClick(Sender: TObject);
+var
+  item: TRbRecycleBinItem;
+  tempFile, tempDir: string;
+begin
+  if TreeView1.Selected.ImageIndex = 0 then
+  begin
+    // File
+    item := TRbRecycleBinItem(TreeView1.Selected.Data);
+    // TODO: Does not work if the file type is unknown
+    ShellExecute(Handle, 'open', PChar(item.PhysicalFile), '', '', SW_NORMAL);
+  end;
+  if TreeView1.Selected.ImageIndex = 10 then
+  begin
+    // Folder
+    item := TRbRecycleBinItem(TreeView1.Selected.Data);
+    ShellExecute(Handle, 'open', PChar(item.PhysicalFile), '', '', SW_NORMAL);
+  end;
 end;
 
 end.
