@@ -161,7 +161,7 @@ type
   // TODO: Wie sieht es aus mit Laufwerken, die nur als Mount-Point eingebunden sind?
   TRbDrive = class(TObject)
   strict private
-    FDriveLetter: Char;
+    FDriveLetter: AnsiChar;
 
     function OldCapacityPercent(var res: integer): boolean; // in % (0-100)
     function NewCapacityAbsolute(var res: integer): boolean; // in MB
@@ -178,12 +178,12 @@ type
 
     // TODO: get drive serial
   public
-    constructor Create(ADriveLetter: Char);
+    constructor Create(ADriveLetter: AnsiChar);
 
     // Wenn UserSID='', dann werden alle Recycler gefunden
     procedure ListRecycleBins(list: TObjectList{TRbRecycleBin}; UserSID: string='');
 
-    property DriveLetter: Char read FDriveLetter;
+    property DriveLetter: AnsiChar read FDriveLetter;
     property VolumeGUID: TGUID read GetVolumeGUID;
     property VolumeGUIDAvailable: boolean read GetVolumeGUIDAvailable;
     function GetAPIInfo: TSHQueryRBInfo;
@@ -201,7 +201,7 @@ type
   TRecycleBinManager = class(TObject)
   public
     class procedure ListDrives(list: TObjectList{TRbDrive}); static;
-    class function RecycleBinPossible(Drive: Char): boolean; static;
+    class function RecycleBinPossible(Drive: AnsiChar): boolean; static;
 
     class function OwnRecyclersSize: int64; static;
     class function OwnRecyclersNumItems: int64; static;
@@ -364,7 +364,7 @@ const
 
 type
   TSHQueryRecycleBin = function(pszRootPath: LPCTSTR; var pSHQueryRBInfo: TSHQueryRBInfo): HRESULT; stdcall;
-  TGetVolumeNameForVolumeMountPoint = function(lpszVolumeMountPoint: LPCTSTR; lpszVolumeName: LPTSTR; cchBufferLength: DWORD): BOOL; stdcall;
+  TGetVolumeNameForVolumeMountPointA = function(lpszVolumeMountPoint: LPCSTR; lpszVolumeName: LPSTR; cchBufferLength: DWORD): BOOL; stdcall;
   TSHEmptyRecycleBin = function(Wnd: HWND; pszRootPath: PChar; dwFlags: DWORD): HRESULT; stdcall;
   TSHGetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD); stdcall;
   TSHGetSetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD; bSet: BOOL); stdcall;
@@ -381,19 +381,19 @@ begin
     s := Copy(s, 1, Length(s)-1);
 end;
 
-function GetDriveGUID(driveLetter: Char; var guid: TGUID): DWORD;
+function GetDriveGUID(driveLetter: AnsiChar; var guid: TGUID): DWORD;
 var
   Buffer: array[0..50] of AnsiChar;
   x: string;
-  PGetVolumeNameForVolumeMountPoint: TGetVolumeNameForVolumeMountPoint;
+  PGetVolumeNameForVolumeMountPointA: TGetVolumeNameForVolumeMountPointA;
   RBHandle: THandle;
 begin
   RBHandle := LoadLibrary(kernel32);
   try
     if RBHandle <> 0 then
     begin
-      PGetVolumeNameForVolumeMountPoint := GetProcAddress(RBHandle, C_GetVolumeNameForVolumeMountPoint);
-      if not Assigned(@PGetVolumeNameForVolumeMountPoint) then
+      PGetVolumeNameForVolumeMountPointA := GetProcAddress(RBHandle, C_GetVolumeNameForVolumeMountPoint);
+      if not Assigned(@PGetVolumeNameForVolumeMountPointA) then
       begin
         result := GetLastError;
         FreeLibrary(RBHandle);
@@ -401,9 +401,9 @@ begin
       end
       else
       begin
-        if PGetVolumeNameForVolumeMountPoint(PAnsiChar(driveLetter+':\'), Buffer, SizeOf(Buffer)) then
+        if PGetVolumeNameForVolumeMountPointA(PAnsiChar(AnsiString(driveLetter+':\')), Buffer, SizeOf(Buffer)) then
         begin
-          x := buffer;
+          x := string(buffer);
           x := copy(x, 11, 38);
           guid := StringToGUID(x);
           result := ERROR_SUCCESS;
@@ -480,11 +480,11 @@ begin
   end;
 end;
 
-function DriveLetterToDriveNumber(driveLetter: Char): integer;
+function DriveLetterToDriveNumber(driveLetter: AnsiChar): integer;
 var
   tmp: string;
 begin
-  tmp := LowerCase(driveLetter);
+  tmp := LowerCase(string(driveLetter));
   result := Ord(tmp[1])-Ord('a');
 end;
 
@@ -948,11 +948,11 @@ begin
   // see http://www.delphipraxis.net/post2933.html
   if not GetLogicalDrives and (1 shl DriveNumber) <> 0 then
   begin
-    raise EInvalidDrive.CreateFmt(LNG_DRIVE_NOT_EXISTING, [UpperCase(FDriveLetter)+':']);
+    raise EInvalidDrive.CreateFmt(LNG_DRIVE_NOT_EXISTING, [UpperCase(string(FDriveLetter))+':']);
   end;
 end;
 
-constructor TRbDrive.Create(ADriveLetter: Char);
+constructor TRbDrive.Create(ADriveLetter: AnsiChar);
 begin
   inherited Create;
 
@@ -1095,7 +1095,7 @@ begin
     // Er wird bei der ersten Änderung der Papierkorb-Einstellungen erstellt.
     if reg.OpenKeyReadOnly('SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\BitBucket') then
     begin
-      if reg.OpenKeyReadOnly(FDriveLetter) then
+      if reg.OpenKeyReadOnly(string(FDriveLetter)) then
       begin
         if reg.ValueExists('Percent') then
         begin
@@ -1193,7 +1193,7 @@ begin
         // Er wird bei der ersten Änderung der Papierkorb-Einstellungen erstellt.
         if reg.OpenKeyReadOnly('SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\BitBucket') then
         begin
-          if reg.OpenKeyReadOnly(FDriveLetter) then
+          if reg.OpenKeyReadOnly(string(FDriveLetter)) then
           begin
             if reg.ValueExists('NukeOnDelete') then
             begin
@@ -1376,11 +1376,11 @@ begin
   if r.sourceAnsi[0] = #0 then
   begin
     FRemovedEntry := true;
-    r.sourceAnsi[0] := FSourceDrive;
+    r.sourceAnsi[0] := AnsiChar(FSourceDrive);
   end;
 
   FSourceAnsi := r.sourceAnsi;
-  FSourceUnicode := r.sourceAnsi; // Unicode does not exist in INFO(1) structure
+  FSourceUnicode := WideString(r.sourceAnsi); // Unicode does not exist in INFO(1) structure
   FID := IntToStr(r.recordNumber);
   FDeletionTime := FileTimeToDateTime(r.deletionTime);
   FOriginalSize := r.originalSize;
@@ -1414,7 +1414,7 @@ begin
 
   // e.g. C:\...\DC0.doc
   result := IncludeTrailingPathDelimiter(ExtractFilePath(IndexFile)) +
-            'D' + (* SourceDrive *) SourceAnsi[1] + ID + ExtractFileExt(SourceAnsi);
+            'D' + (* SourceDrive *) Source[1] + ID + ExtractFileExt(Source);
 end;
 
 constructor TRbInfoAItem.Create(fs: TStream; AIndexFile: string);
@@ -1529,7 +1529,7 @@ begin
     FSourceAnsi := AnsiString(r1.sourceUnicode); // Invalid chars are automatically converted into '?'
     FSourceUnicode := WideString(r1.sourceUnicode);
     FID := ''; // will be added manually (at the constructor)
-    FSourceDrive := AnsiChar(r1.sourceUnicode[1]);
+    FSourceDrive := r1.sourceUnicode[1];
     FDeletionTime := FileTimeToDateTime(r1.deletionTime);
     FOriginalSize := r1.originalSize;
   end
@@ -1544,7 +1544,7 @@ begin
     FSourceAnsi := AnsiString(WideString(r2sourceUnicode)); // Invalid chars are automatically converted into '?'
     FSourceUnicode := WideString(r2sourceUnicode);
     FID := ''; // will be added manually (at the constructor)
-    FSourceDrive := AnsiChar(r2sourceUnicode[1]);
+    FSourceDrive := r2sourceUnicode[1];
     FDeletionTime := FileTimeToDateTime(r2.deletionTime);
     FOriginalSize := r2.originalSize;
   end
@@ -1781,7 +1781,7 @@ end;
 
 class procedure TRecycleBinManager.ListDrives(list: TObjectList{TRbDrive});
 var
-  drive: Char;
+  drive: AnsiChar;
 begin
   for drive := 'A' to 'Z' do
     if RecycleBinPossible(drive) then
@@ -1846,7 +1846,7 @@ begin
   end;
 end;
 
-class function TRecycleBinManager.RecycleBinPossible(Drive: Char): boolean;
+class function TRecycleBinManager.RecycleBinPossible(Drive: AnsiChar): boolean;
 var
   typ: Integer;
 begin
@@ -2327,9 +2327,11 @@ var
   reg: TRegistry;
   rbuf: array[0..255] of byte;
 
-  dwResult: DWORD;
+  //dwResult: DWORD;
+  lpdwResult: PDWORD_PTR;
 begin
   PSHGetSetSettings := nil;
+  lpdwResult := nil;
 
   RBHandle := LoadLibrary(shell32);
   try
@@ -2360,7 +2362,7 @@ begin
       SendMessageTimeout (
         HWND_BROADCAST, WM_SETTINGCHANGE,
         0, lParam (pChar ('ShellState')),
-        SMTO_ABORTIFHUNG, 5000, dwResult
+        SMTO_ABORTIFHUNG, 5000, lpdwResult(*dwResult*)
       );
     end
     else
@@ -2390,7 +2392,7 @@ begin
           SendMessageTimeout (
             HWND_BROADCAST, WM_SETTINGCHANGE,
             0, lParam (pChar ('ShellState')),
-            SMTO_ABORTIFHUNG, 5000, dwResult
+            SMTO_ABORTIFHUNG, 5000, lpdwResult(*dwResult*)
           );
 
           reg.CloseKey;
