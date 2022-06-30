@@ -5,7 +5,7 @@
 	<assemblyIdentity
 	    name="ViaThinkSoft.RecyclerListing"
 	    processorArchitecture="x86"
-	    version="1.7.0.18"
+	    version="1.0.0.0"
 	    type="win32"/>
 	<description>ViaThinkSoft Recycle Bin Listing</description>
 	<dependency>

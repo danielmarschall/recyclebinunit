@@ -9,6 +9,8 @@ uses
 
 {$R *.res}
 
+{$R XPManifest.res}
+
 begin
   Application.Initialize;
   Application.Title := 'Recycler Listing (ViaThinkSoft Recycle Bin Unit v2 Demo)';
