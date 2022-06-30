@@ -10,6 +10,7 @@
 + Demo application: Feature to open a file or directory by double-clicking!
 + Unicode Ready
 + 64 bit Ready
++ Fixed TRbDrive.GetAPIInfo issue in for 64 bit (TSHQueryRBInfo struct had to be 8 byte aligned for x64)
 
 2016-11-01
 + Fixed memory leak in SID-Unit (thanks to Mikkao for finding this bug)

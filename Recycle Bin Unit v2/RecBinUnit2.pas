@@ -66,7 +66,12 @@ type
   EInvalidDrive = class(Exception);
 
   PSHQueryRBInfo = ^TSHQueryRBInfo;
+  {$IFDEF WIN64}
+  // ATTENTION! MUST NOT BE PACKED! Alignment for 64 bit must be 8 and for 32 bit must be 4
+  TSHQueryRBInfo = record
+  {$ELSE}
   TSHQueryRBInfo = packed record
+  {$ENDIF}
     cbSize      : DWORD;
     i64Size     : int64;
     i64NumItems : int64;
@@ -356,16 +361,22 @@ resourcestring
   LNG_DRIVE_NOT_EXISTING = 'Drive %s does not exist.';
 
 const
+  {$IFDEF UNICODE}
+  C_SHEmptyRecycleBin = 'SHEmptyRecycleBinW';
+  C_SHQueryRecycleBin = 'SHQueryRecycleBinW';
+  C_GetVolumeNameForVolumeMountPoint = 'GetVolumeNameForVolumeMountPointW';
+  {$ELSE}
+  C_SHEmptyRecycleBin = 'SHEmptyRecycleBinA';
   C_SHQueryRecycleBin = 'SHQueryRecycleBinA';
   C_GetVolumeNameForVolumeMountPoint = 'GetVolumeNameForVolumeMountPointA';
-  C_SHEmptyRecycleBinA = 'SHEmptyRecycleBinA';
+  {$ENDIF}
   C_SHGetSettings = 'SHGetSettings';
   C_SHGetSetSettings = 'SHGetSetSettings';
 
 type
   TSHQueryRecycleBin = function(pszRootPath: LPCTSTR; var pSHQueryRBInfo: TSHQueryRBInfo): HRESULT; stdcall;
-  TGetVolumeNameForVolumeMountPointA = function(lpszVolumeMountPoint: LPCSTR; lpszVolumeName: LPSTR; cchBufferLength: DWORD): BOOL; stdcall;
-  TSHEmptyRecycleBin = function(Wnd: HWND; pszRootPath: PChar; dwFlags: DWORD): HRESULT; stdcall;
+  TGetVolumeNameForVolumeMountPoint = function(lpszVolumeMountPoint: LPCTSTR; lpszVolumeName: LPTSTR; cchBufferLength: DWORD): BOOL; stdcall;
+  TSHEmptyRecycleBin = function(Wnd: HWND; pszRootPath: LPCTSTR; dwFlags: DWORD): HRESULT; stdcall;
   TSHGetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD); stdcall;
   TSHGetSetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD; bSet: BOOL); stdcall;
 
@@ -404,17 +415,17 @@ end;
 
 function GetDriveGUID(driveLetter: AnsiChar; var guid: TGUID): DWORD;
 var
-  Buffer: array[0..50] of AnsiChar;
+  Buffer: array[0..50] of Char;
   x: string;
-  PGetVolumeNameForVolumeMountPointA: TGetVolumeNameForVolumeMountPointA;
+  PGetVolumeNameForVolumeMountPoint: TGetVolumeNameForVolumeMountPoint;
   RBHandle: THandle;
 begin
   RBHandle := LoadLibrary(kernel32);
   try
     if RBHandle <> 0 then
     begin
-      PGetVolumeNameForVolumeMountPointA := GetProcAddress(RBHandle, C_GetVolumeNameForVolumeMountPoint);
-      if not Assigned(@PGetVolumeNameForVolumeMountPointA) then
+      PGetVolumeNameForVolumeMountPoint := GetProcAddress(RBHandle, C_GetVolumeNameForVolumeMountPoint);
+      if not Assigned(@PGetVolumeNameForVolumeMountPoint) then
       begin
         result := GetLastError;
         FreeLibrary(RBHandle);
@@ -422,7 +433,7 @@ begin
       end
       else
       begin
-        if PGetVolumeNameForVolumeMountPointA(PAnsiChar(AnsiString(driveLetter+':\')), Buffer, SizeOf(Buffer)) then
+        if PGetVolumeNameForVolumeMountPoint(PChar(driveLetter+':\'), Buffer, SizeOf(Buffer)) then
         begin
           x := string(buffer);
           x := copy(x, 11, 38);
@@ -1620,7 +1631,7 @@ begin
   try
     if LibHandle <> 0 then
     begin
-      @PSHEmptyRecycleBin := GetProcAddress(LibHandle, C_SHEmptyRecycleBinA);
+      @PSHEmptyRecycleBin := GetProcAddress(LibHandle, C_SHEmptyRecycleBin);
       if @PSHEmptyRecycleBin <> nil then
       begin
         PSHEmptyRecycleBin(hInstance, nil, flags);

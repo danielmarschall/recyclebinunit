@@ -11,6 +11,7 @@ ATTENTION! This unit is not developed anymore.
 + Added XP Theme to the demo application
 + Unicode Ready
 + 64 bit Ready
++ Fixed RecyclerGetAPIInfo issue in for 64 bit (TSHQueryRBInfo struct had to be 8 byte aligned for x64)
 
 2016-07-01 (current version)
 + RecyclerRemoveItem() does now correctly delete directories.
