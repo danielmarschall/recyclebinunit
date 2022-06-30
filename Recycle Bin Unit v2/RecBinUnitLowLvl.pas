@@ -52,12 +52,22 @@ type
   end;
 
 type
-  PRbVistaRecord = ^TRbVistaRecord;
-  TRbVistaRecord = record
-    signature: int64; // Always 01 00 00 00 00 00 00 00 ?
+  PRbVistaRecord1 = ^TRbVistaRecord1;
+  TRbVistaRecord1 = record
+    version: int64; // Always 01 00 00 00 00 00 00 00
     originalSize: int64;
     deletionTime: FILETIME;
     sourceUnicode: array[0..MAX_PATH-1] of WideChar;
+  end;
+
+type
+  PRbVistaRecord2Head = ^TRbVistaRecord2Head;
+  TRbVistaRecord2Head = record
+    version: int64; // Always 02 00 00 00 00 00 00 00
+    originalSize: int64;
+    deletionTime: FILETIME;
+    sourceCountChars: DWORD; // including NUL
+    //sourceUnicode: array[0..sourceCountChars+1] of WideChar;
   end;
 
 type

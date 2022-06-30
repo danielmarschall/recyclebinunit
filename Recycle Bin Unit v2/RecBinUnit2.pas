@@ -5,7 +5,7 @@ unit RecBinUnit2 platform;
 // E-MAIL: info@daniel-marschall.de                                               //
 // Web:    www.daniel-marschall.de & www.viathinksoft.de                          //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 01 NOV 2016                                                          //
+// Revision: 30 JUN 2022                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successfully tested with:                                                      //
@@ -18,7 +18,8 @@ unit RecBinUnit2 platform;
 // Windows 2003 Server EE SP1                                                     //
 // Windows Vista                                                                  //
 // Windows 7                                                                      //
-// Windows 10                                                                     //
+// Windows 10 (version 1 and version 2 format)                                    //
+// Windows 11                                                                     //
 ////////////////////////////////////////////////////////////////////////////////////
 
 // Delphi 7 Compatibility:  (TODO: compiler switches)
@@ -54,7 +55,7 @@ uses
   Windows, SysUtils, Classes, ContNrs, ShellAPI, Registry, Messages, Math;
 
 const
-  RECBINUNIT_VERSION = '2016-07-17';
+  RECBINUNIT_VERSION = '2022-06-30';
 
   RECYCLER_CLSID: TGUID = '{645FF040-5081-101B-9F08-00AA002F954E}';
   NULL_GUID:      TGUID = '{00000000-0000-0000-0000-000000000000}';
@@ -365,8 +366,8 @@ type
   TSHQueryRecycleBin = function(pszRootPath: LPCTSTR; var pSHQueryRBInfo: TSHQueryRBInfo): HRESULT; stdcall;
   TGetVolumeNameForVolumeMountPoint = function(lpszVolumeMountPoint: LPCTSTR; lpszVolumeName: LPTSTR; cchBufferLength: DWORD): BOOL; stdcall;
   TSHEmptyRecycleBin = function(Wnd: HWND; pszRootPath: PChar; dwFlags: DWORD): HRESULT; stdcall;
-  TSHGetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD) stdcall;
-  TSHGetSetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD; bSet: BOOL) stdcall;
+  TSHGetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD); stdcall;
+  TSHGetSetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD; bSet: BOOL); stdcall;
 
 function GetDriveGUID(driveLetter: Char; var guid: TGUID): DWORD;
 var
@@ -695,12 +696,9 @@ function TRbRecycleBin.GetItem(id: string): TRbRecycleBinItem;
     try
       fs.Seek(0, soFromBeginning);
 
-      if fs.Size = SizeOf(TRbVistaRecord) then
+      if SameText(ExtractFileName(AFile), '$I'+id) then
       begin
-        if SameText(ExtractFileName(AFile), '$I'+id) then
-        begin
-          result := TRbVistaItem.Create(fs, AFile, id);
-        end;
+        result := TRbVistaItem.Create(fs, AFile, id);
       end
       else
       begin
@@ -803,14 +801,9 @@ procedure TRbRecycleBin.ListItems(list: TObjectList{TRbRecycleBinItem});
     try
       fs.Seek(0, soFromBeginning);
 
-      if fs.Size = SizeOf(TRbVistaRecord) then
+      if SameText(copy(ExtractFileName(AFile), 1, 2), '$I') then
       begin
-        testID := ExtractFileName(AFile);
-        if SameText(copy(testID, 1, 2), '$I') then
-          testID := copy(testID, 3, Length(testID)-2)
-        else
-          testID := ''; // Just in case the user wants to read a single Vista file, but without the $I name
-
+        testID := copy(testID, 3, Length(testID)-2);
         list.Add(TRbVistaItem.Create(fs, AFile, testID));
       end
       else
@@ -1500,16 +1493,43 @@ end;
 
 procedure TRbVistaItem.ReadFromStream(stream: TStream);
 var
-  r: TRbVistaRecord;
+  r1: TRbVistaRecord1;
+  r2: TRbVistaRecord2Head;
+  r2SourceUnicode: array of WideChar;
+  version: DWORD;
 begin
-  stream.ReadBuffer(r, SizeOf(r));
+  stream.ReadBuffer(version, SizeOf(version));
 
-  FSourceAnsi := AnsiString(r.sourceUnicode); // Invalid chars are automatically converted into '?'
-  FSourceUnicode := r.sourceUnicode;
-  FID := ''; // will be added manually (at the constructor)
-  FSourceDrive := AnsiChar(r.sourceUnicode[1]);
-  FDeletionTime := FileTimeToDateTime(r.deletionTime);
-  FOriginalSize := r.originalSize;
+  if version = 1 then
+  begin
+    stream.Seek(0, soBeginning);
+    stream.ReadBuffer(r1, SizeOf(r1));
+    FSourceAnsi := AnsiString(r1.sourceUnicode); // Invalid chars are automatically converted into '?'
+    FSourceUnicode := WideString(r1.sourceUnicode);
+    FID := ''; // will be added manually (at the constructor)
+    FSourceDrive := AnsiChar(r1.sourceUnicode[1]);
+    FDeletionTime := FileTimeToDateTime(r1.deletionTime);
+    FOriginalSize := r1.originalSize;
+  end
+  else if version = 2 then
+  begin
+    stream.Seek(0, soBeginning);
+    stream.ReadBuffer(r2, SizeOf(r2));
+
+    SetLength(r2SourceUnicode, 2*(r2.SourceCountChars-1));
+    stream.Read(r2SourceUnicode[0], 2*(r2.sourceCountChars-1));
+
+    FSourceAnsi := AnsiString(WideString(r2sourceUnicode)); // Invalid chars are automatically converted into '?'
+    FSourceUnicode := WideString(r2sourceUnicode);
+    FID := ''; // will be added manually (at the constructor)
+    FSourceDrive := AnsiChar(r2sourceUnicode[1]);
+    FDeletionTime := FileTimeToDateTime(r2.deletionTime);
+    FOriginalSize := r2.originalSize;
+  end
+  else
+  begin
+    raise Exception.CreateFmt('Invalid Vista index format version %d', [version]);
+  end;
 end;
 
 function TRbVistaItem.DeleteFile: boolean;

@@ -1,6 +1,10 @@
 
 === Changelog RecBinUnit v2 ===
 
+2022-06-30
++ Added support for $Ixxx "Vista" format 2 files (added somewhere in a Windows 10 build)
+  The difference towards $Ixxx "Vista" format 1 files is that the filename is not limited to MAX_PATH anymore. (New limit 0xFFFFFFFD)
+
 2016-11-01
 + Fixed memory leak in SID-Unit (thanks to Mikkao for finding this bug)
 
