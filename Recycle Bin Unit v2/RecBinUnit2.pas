@@ -380,31 +380,6 @@ type
   TSHGetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD); stdcall;
   TSHGetSetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD; bSet: BOOL); stdcall;
 
-type
-  TWideCharArray = array of WideChar;
-  TAnsiCharArray = array of AnsiChar;
-
-function WideCharArrayToWideString(x: TWideCharArray): WideString;
-var
-  i: integer;
-begin
-  // In x86, the "cast" works with WideString.
-  // In x64, it does not work (outputs empty string, without compiler warning!)
-  // So, we created this fake-cast
-  SetLength(result, Length(x));
-  for i := 0 to Length(x)-1 do
-    result[i+1] := x[i];
-end;
-
-function AnsiCharArrayToWideString(x: TAnsiCharArray): WideString;
-var
-  i: integer;
-begin
-  SetLength(result, Length(x));
-  for i := 0 to Length(x)-1 do
-    result[i+1] := WideChar(x[i]);
-end;
-
 procedure AnsiRemoveNulChars(var s: AnsiString);
 begin
   while (Length(s) > 0) and (s[Length(s)] = #0) do
@@ -1560,9 +1535,11 @@ procedure TRbVistaItem.ReadFromStream(stream: TStream);
 var
   r1: TRbVistaRecord1;
   r2: TRbVistaRecord2Head;
-  r2SourceUnicode: TWideCharArray;
+  r2SourceUnicode: array of WideChar;
   version: DWORD;
   i: Integer;
+resourcestring
+  LNG_VISTA_WRONG_FORMAT = 'Invalid Vista index format version %d';
 begin
   stream.ReadBuffer(version, SizeOf(version));
 
@@ -1594,8 +1571,17 @@ begin
     SetLength(r2SourceUnicode, SizeOf(WideChar)*(r2.SourceCountChars-1));
     stream.Read(r2SourceUnicode[0], SizeOf(WideChar)*(r2.sourceCountChars-1));
 
-    FSourceAnsi := AnsiString(WideCharArrayToWideString(r2sourceUnicode)); // Invalid chars are automatically converted into '?'
-    FSourceUnicode := WideCharArrayToWideString(r2sourceUnicode);
+    // Invalid chars are automatically converted into '?'
+    (* FSourceAnsi := AnsiString(WideCharArrayToWideString(r2sourceUnicode)); *)
+    SetLength(FSourceAnsi, Length(r2sourceUnicode));
+    for i := 0 to Length(r2sourceUnicode)-1 do
+      FSourceAnsi[i+1] := AnsiChar(r2sourceUnicode[i]);
+
+    (* FSourceUnicode := WideCharArrayToWideString(r2sourceUnicode); *)
+    SetLength(FSourceUnicode, Length(r2sourceUnicode));
+    for i := 0 to Length(r2sourceUnicode)-1 do
+      FSourceUnicode[i+1] := WideChar(r2sourceUnicode[i]);
+
     FID := ''; // will be added manually (at the constructor)
     FSourceDrive := AnsiChar(r2sourceUnicode[1]);
     FDeletionTime := FileTimeToDateTime(r2.deletionTime);
@@ -1603,7 +1589,7 @@ begin
   end
   else
   begin
-    raise Exception.CreateFmt('Invalid Vista index format version %d', [version]);
+    raise Exception.CreateFmt(LNG_VISTA_WRONG_FORMAT, [version]);
   end;
 
   // Remove #0 at the end. There are some bugs where #0 is added to ANSI/Unicode read paths?! (probably in the ReadVista stuff)

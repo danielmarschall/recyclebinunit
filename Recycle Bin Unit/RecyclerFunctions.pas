@@ -387,6 +387,7 @@ resourcestring
   LNG_API_CALL_ERROR = 'Error while calling the API. Additional information: "%s".';
   LNG_NOT_CALLABLE = '%s not callable';
   LNG_ERROR_CODE = '%s (Arguments: %s) returns error code %s';
+  LNG_UNEXPECTED_VISTA_FORMAT = 'Unexpeceted version %d of Vista index file';
 
 function _DeleteDirectory(const Name: string): boolean;
 var
@@ -966,7 +967,7 @@ begin
   try
     fs.ReadBuffer(version, 4);
     if version > 2 then
-      raise Exception.CreateFmt('Unexpeceted version %d of Vista index file', [version]);
+      raise Exception.CreateFmt(LNG_UNEXPECTED_VISTA_FORMAT, [version]);
     fs.seek(drive_vista_position, soFromBeginning);
     result := _readChar(fs);
   finally
@@ -993,7 +994,7 @@ begin
   try
     fs.ReadBuffer(version, 4);
     if version > 2 then
-      raise Exception.CreateFmt('Unexpeceted version %d of Vista index file', [version]);
+      raise Exception.CreateFmt(LNG_UNEXPECTED_VISTA_FORMAT, [version]);
     fs.seek(timestamp_vista_position, soFromBeginning);
     result := _fileTimeToDateTime(_readInt64(fs));
   finally
@@ -1026,7 +1027,7 @@ begin
     else if version = 1 then
       fs.seek(unicode_vista_position_v1, soFromBeginning)
     else
-      raise Exception.CreateFmt('Unexpeceted version %d of Vista index file', [version]);
+      raise Exception.CreateFmt(LNG_UNEXPECTED_VISTA_FORMAT, [version]);
     result := _readNullTerminatedWideString(fs);
   finally
     fs.free;
@@ -1051,7 +1052,7 @@ begin
   try
     fs.ReadBuffer(version, 4);
     if version > 2 then
-      raise Exception.CreateFmt('Unexpeceted version %d of Vista index file', [version]);
+      raise Exception.CreateFmt(LNG_UNEXPECTED_VISTA_FORMAT, [version]);
     fs.seek(size_vista_position, soFromBeginning);
     result := _readInt32(fs);
   finally
@@ -2219,7 +2220,7 @@ end;
 
 function RecyclerShellStateConfirmationDialogEnabled: boolean;
 type
-  TSHGetSettings = procedure (var lpss: SHELLSTATE; dwMask: DWORD) stdcall;
+  TSHGetSettings = procedure (var lpss: SHELLSTATE; dwMask: DWORD); stdcall;
 const
   C_SHGetSettings = 'SHGetSettings';
 var
@@ -2291,7 +2292,7 @@ end;
 
 procedure RecyclerConfirmationDialogSetEnabled(NewSetting: boolean);
 type
-  TSHGetSetSettings = procedure (var lpss: SHELLSTATE; dwMask: DWORD; bSet: BOOL) stdcall;
+  TSHGetSetSettings = procedure (var lpss: SHELLSTATE; dwMask: DWORD; bSet: BOOL); stdcall;
 const
   C_SHGetSetSettings = 'SHGetSetSettings';
 var
