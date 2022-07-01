@@ -380,7 +380,11 @@ type
   TSHGetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD); stdcall;
   TSHGetSetSettings = procedure(var lpss: SHELLSTATE; dwMask: DWORD; bSet: BOOL); stdcall;
 
-function WideCharArrayToWideString(x: array of WideChar): WideString;
+type
+  TWideCharArray = array of WideChar;
+  TAnsiCharArray = array of AnsiChar;
+
+function WideCharArrayToWideString(x: TWideCharArray): WideString;
 var
   i: integer;
 begin
@@ -392,7 +396,7 @@ begin
     result[i+1] := x[i];
 end;
 
-function AnsiCharArrayToWideString(x: array of AnsiChar): WideString;
+function AnsiCharArrayToWideString(x: TAnsiCharArray): WideString;
 var
   i: integer;
 begin
@@ -1394,6 +1398,7 @@ end;
 procedure TRbInfoAItem.ReadFromStream(stream: TStream);
 var
   r: TRbInfoRecordA;
+  i: Integer;
 begin
   stream.ReadBuffer(r, SizeOf(r));
 
@@ -1412,7 +1417,13 @@ begin
   end;
 
   FSourceAnsi := r.sourceAnsi;
-  FSourceUnicode := AnsiCharArrayToWideString(r.sourceAnsi); // Unicode does not exist in INFO(1) structure
+
+  // Unicode does not exist in INFO(1) structure
+  (* FSourceUnicode := AnsiCharArrayToWideString(r.sourceAnsi); *)
+  SetLength(FSourceUnicode, Length(r.sourceAnsi));
+  for i := 0 to Length(r.sourceAnsi)-1 do
+    FSourceUnicode[i+1] := WideChar(r.sourceAnsi[i]);
+
   FID := IntToStr(r.recordNumber);
   FDeletionTime := FileTimeToDateTime(r.deletionTime);
   FOriginalSize := r.originalSize;
@@ -1549,8 +1560,9 @@ procedure TRbVistaItem.ReadFromStream(stream: TStream);
 var
   r1: TRbVistaRecord1;
   r2: TRbVistaRecord2Head;
-  r2SourceUnicode: array of WideChar;
+  r2SourceUnicode: TWideCharArray;
   version: DWORD;
+  i: Integer;
 begin
   stream.ReadBuffer(version, SizeOf(version));
 
@@ -1558,10 +1570,19 @@ begin
   begin
     stream.Seek(0, soBeginning);
     stream.ReadBuffer(r1, SizeOf(r1));
-    FSourceAnsi := AnsiString(WideCharArrayToWideString(r1.sourceUnicode)); // Invalid chars are automatically converted into '?'
-    FSourceUnicode := WideCharArrayToWideString(r1.sourceUnicode);
+
+    (* FSourceAnsi := AnsiString(WideCharArrayToWideString(r1.sourceUnicode)); *)
+    SetLength(FSourceAnsi, Length(r1.sourceUnicode));
+    for i := 0 to Length(r1.sourceUnicode)-1 do
+      FSourceAnsi[i+1] := AnsiChar(r1.sourceUnicode[i]); // Note: Invalid chars are automatically converted into '?'
+
+    (* FSourceUnicode := WideCharArrayToWideString(r1.sourceUnicode); *)
+    SetLength(FSourceUnicode, Length(r1.sourceUnicode));
+    for i := 0 to Length(r1.sourceUnicode)-1 do
+      FSourceUnicode[i+1] := r1.sourceUnicode[i];
+
     FID := ''; // will be added manually (at the constructor)
-    FSourceDrive := r1.sourceUnicode[1];
+    FSourceDrive := AnsiChar(r1.sourceUnicode[1]);
     FDeletionTime := FileTimeToDateTime(r1.deletionTime);
     FOriginalSize := r1.originalSize;
   end
@@ -1576,7 +1597,7 @@ begin
     FSourceAnsi := AnsiString(WideCharArrayToWideString(r2sourceUnicode)); // Invalid chars are automatically converted into '?'
     FSourceUnicode := WideCharArrayToWideString(r2sourceUnicode);
     FID := ''; // will be added manually (at the constructor)
-    FSourceDrive := r2sourceUnicode[1];
+    FSourceDrive := AnsiChar(r2sourceUnicode[1]);
     FDeletionTime := FileTimeToDateTime(r2.deletionTime);
     FOriginalSize := r2.originalSize;
   end
