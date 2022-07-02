@@ -11,11 +11,11 @@ uses
 type
   PRbInfoHeader = ^TRbInfoHeader;
   TRbInfoHeader = record
-    format: DWORD;         // Unsure...
+    format: DWORD;         // Unsure if this is just a version field or some unknown flags...!
                            // Win95 (without IE4): 00 00 00 00
                            // Win95 (with IE4):    04 00 00 00
                            // Win NT4:             02 00 00 00
-                           // Win XP:              05 00 00 00
+                           // Win Me, 2000, XP:    05 00 00 00
     totalEntries: DWORD;   // Only Win95 (without IE4) and Win NT4, unknown purpose for other OS versions
     nextPossibleID: DWORD; // Only Win95 (without IE4) and Win NT4, unknown purpose for other OS versions
     recordLength: DWORD; // 0x181  =  INFO  structure (without Unicode)
