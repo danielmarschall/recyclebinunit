@@ -1559,7 +1559,7 @@ begin
       FSourceUnicode[i+1] := r1.sourceUnicode[i];
 
     FID := ''; // will be added manually (at the constructor)
-    FSourceDrive := AnsiChar(r1.sourceUnicode[1]);
+    FSourceDrive := Char(r1.sourceUnicode[1]);
     FDeletionTime := FileTimeToDateTime(r1.deletionTime);
     FOriginalSize := r1.originalSize;
   end
@@ -1583,7 +1583,7 @@ begin
       FSourceUnicode[i+1] := WideChar(r2sourceUnicode[i]);
 
     FID := ''; // will be added manually (at the constructor)
-    FSourceDrive := AnsiChar(r2sourceUnicode[1]);
+    FSourceDrive := Char(r2sourceUnicode[1]);
     FDeletionTime := FileTimeToDateTime(r2.deletionTime);
     FOriginalSize := r2.originalSize;
   end
