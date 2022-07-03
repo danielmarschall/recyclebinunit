@@ -5,7 +5,7 @@ unit RecBinUnit2 platform;
 // E-MAIL: info@daniel-marschall.de                                               //
 // Web:    www.daniel-marschall.de & www.viathinksoft.de                          //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 02 JUL 2022                                                          //
+// Revision: 03 JUL 2022                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successfully tested with:                                                      //
@@ -55,7 +55,7 @@ uses
   Windows, SysUtils, Classes, ContNrs, ShellAPI, Registry, Messages, Math;
 
 const
-  RECBINUNIT_VERSION = '2022-07-02';
+  RECBINUNIT_VERSION = '2022-07-03';
 
   RECYCLER_CLSID: TGUID = '{645FF040-5081-101B-9F08-00AA002F954E}';
   NULL_GUID:      TGUID = '{00000000-0000-0000-0000-000000000000}';
@@ -837,7 +837,8 @@ procedure TRbRecycleBin.ListItems(list: TObjectList{TRbRecycleBinItem});
         vistaId := ''; // manual file that was not named $I..., so we cannot get $R... ID and therefore no physical file!
         try
           testVistaItem := TRbVistaItem.Create(fs, AFile, vistaId);
-          if Copy(testVistaItem.Source,2,2) <> ':\' then
+          if (Copy(testVistaItem.Source,2,2) <> ':\') and
+             (Copy(testVistaItem.Source,2,2) <> '\\') then
             FreeAndNil(testVistaItem);
         except
           testVistaItem := nil;
@@ -868,10 +869,11 @@ procedure TRbRecycleBin.ListItems(list: TObjectList{TRbRecycleBinItem});
               // Try to read the Unicode record and check if it is valid
               // In case it is no Unicode record, then the Unicode part will be the
               // ANSI source name of the next record. In this case, we won't get
-              // a ':' at the Unicode string.
+              // a ':\' or '\\' at the Unicode string.
               bakPosition := fs.Position;
               wTest := TRbInfoWItem.Create(fs, AFile);
-              if Copy(wTest.SourceUnicode, 2, 2) = ':\' then
+              if (Copy(wTest.SourceUnicode, 2, 2) = ':\') or
+                 (Copy(wTest.SourceUnicode, 2, 2) = '\\') then
               begin
                 // Yes, it is a valid Unicode record.
                 list.Add(wTest);
@@ -1403,7 +1405,10 @@ var
 begin
   stream.ReadBuffer(r, SizeOf(r));
 
-  FSourceDrive := Chr(Ord('A') + r.sourceDrive);
+  if r.sourceDrive = 26 then
+    FSourceDrive := '@' // @ is the "Network home drive" of the Win95 time
+  else
+    FSourceDrive := Chr(Ord('A') + r.sourceDrive);
 
   // Win95 with IE4 and Win2000+:
   // Wenn ein Eintrag aus der INFO/INFO2 gelöscht wird, dann wird das erste Byte
@@ -1491,7 +1496,12 @@ begin
   FSourceAnsi := r.sourceAnsi;
   FSourceUnicode := r.sourceUnicode;
   FID := IntToStr(r.recordNumber);
-  FSourceDrive := Chr(Ord('A') + r.sourceDrive);
+
+  if r.sourceDrive = 26 then
+    FSourceDrive := '@' // @ is the "Network home drive" of the Win95 time
+  else
+    FSourceDrive := Chr(Ord('A') + r.sourceDrive);
+
   FDeletionTime := FileTimeToDateTime(r.deletionTime);
   FOriginalSize := r.originalSize;
 

@@ -1,6 +1,9 @@
 
 === Changelog RecBinUnit v2 ===
 
+2022-07-03
++ Added support for "Network home drives" recycle bin (from Win95 days)
+
 2022-07-02
 + Improved recognition of Vista+ index files which are not named with file name $I...
 + Fixed issues in FORMAT.md

@@ -1,7 +1,5 @@
 unit RecBinUnitLowLvl;
 
-// TODO: Gain more information about drive '@' / Homedrive / Netdrive?
-
 interface
 
 uses
@@ -15,12 +13,12 @@ type
                            // Win NT4:               02 00 00 00   (Win96/Cairo?)
                            // Win95 (with IE4), 98:  04 00 00 00
                            // Win Me, 2000, XP:      05 00 00 00   (NT4+IE4, NT5?)
-    totalEntries: DWORD;   // Only Win95 (without IE4) and Win NT4, other OS versions might use the registry instead
-    nextPossibleID: DWORD; // Only Win95 (without IE4) and Win NT4, other OS versions might use the registry instead
+    totalEntries: DWORD;   // Only Win95 (without IE4) and Win NT4, other OS versions will use the registry instead and might write information on WM_ENDSESSION for compatibility reasons
+    nextPossibleID: DWORD; // Only Win95 (without IE4) and Win NT4, other OS versions will use the registry instead and might write information on WM_ENDSESSION for compatibility reasons
     recordLength: DWORD;   // 0x181  =  ANSI records
                            // 0x320  =  Unicode records
     totalSize: DWORD;      // sum of all "originalSize" values;
-                           // Only Win95 (without IE4) and Win NT4, other OS versions might use the registry instead
+                           // Only Win95 (without IE4) and Win NT4, other OS versions will use the registry instead and might write information on WM_ENDSESSION for compatibility reasons
   end;
 
 type
@@ -30,7 +28,7 @@ type
   TRbInfoRecordA = packed record
     sourceAnsi: array[0..MAX_PATH-1] of AnsiChar; // 260 characters (including NUL terminator)
     recordNumber: DWORD;
-    sourceDrive: DWORD; // 0=A, 1=B, 2=C, ...
+    sourceDrive: DWORD; // 0=A, 1=B, 2=C, ..., Z=25, @=26 (@ is the "Network home drive" of the Win95 time)
     deletionTime: FILETIME;
     originalSize: DWORD; // Size occupied on disk. Not the actual file size.
                          // INFO2, for folders: The whole folder size with contents
@@ -43,7 +41,7 @@ type
   TRbInfoRecordW = packed record
     sourceAnsi: array[0..MAX_PATH-1] of AnsiChar; // 260 characters (including NUL terminator)
     recordNumber: DWORD;
-    sourceDrive: DWORD; // 0=A, 1=B, 2=C, ...
+    sourceDrive: DWORD; // 0=A, 1=B, 2=C, ..., Z=25, @=26 (@ is the "Network home drive" of the Win95 times)
     deletionTime: FILETIME;
     originalSize: DWORD;
     sourceUnicode: array[0..MAX_PATH-1] of WideChar; // 260 characters (including NUL terminator)
@@ -68,15 +66,16 @@ type
     deletionTime: FILETIME;
     (* sourceUnicode: BSTR; *)
     sourceCountChars: DWORD; // including NUL
-    //sourceUnicode: array[0..sourceCountChars+1] of WideChar;
+    //sourceUnicode: array[0..sourceCountChars-1] of WideChar;
   end;
 
 type
-  // Windows 95 + Windows NT 4
+  // Windows 95 (tested with 4.00.950 and Win95b) + Windows NT 4
   // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\BitBucket: PurgeInfo (Binary)
+  // TODO: also explain this in FORMAT.md ?
   PRbWin95PurgeInfo = ^TRbWin95PurgeInfo;
   TRbWin95PurgeInfo = packed record
-    cbSize: DWORD;
+    cbSize: DWORD; // 0x48 = 72
     bGlobalSettings: BOOL;
     percentDrive: array['A'..'Z'] of WORD; // 0x00..0x64 = 0%..100%
     percentHomedrive: WORD;
@@ -86,11 +85,11 @@ type
                              // Bit 1: Drive B
                              // ...
                              // Bit 25: Drive Z
-                             // Bit 26: Homedrive
+                             // Bit 26: "Network home drive"
                              // Bit 27: Global
-                             // Bit 28..31 (MSB) probably unused
-    unknown1: DWORD; // For example 04 0D 02 00
-  end;               // or          C4 0C 02 00
+                             // Bit 28..31 (MSB) unused
+    dummy: DWORD; // "dummy to force a new size" ?! (TODO: was there a Windows version that had a smaller size (0x44), i.e. a different version of this record?)
+  end;
 
 implementation
 

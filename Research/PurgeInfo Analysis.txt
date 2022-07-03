@@ -35,7 +35,7 @@ GS
 	0x01 = Global settings for all drives
 
 Pa..Pz	Percentage of the drive A..Z
-PH	Percentage of "homedrive" (drive '@', I am not sure what that means)
+PH	Percentage of "homedrive" (drive '@', "Network home drive" of the Win95 times)
 PG	Percentage of all drives (Global setting)
 	0x00 = 0%
 	0x64 = 100%

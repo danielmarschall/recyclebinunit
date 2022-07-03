@@ -36,15 +36,19 @@ INFO and INFO2 is the index file containing all information about the deleted fi
                                // Win NT4:               02 00 00 00   (Win96/Cairo?)
                                // Win95 (with IE4), 98:  04 00 00 00
                                // Win Me, 2000, XP:      05 00 00 00   (NT4+IE4, NT5?)
-        totalEntries: DWORD;   // Only Win95 (without IE4) and Win NT4, other OS versions might use the registry instead
-        nextPossibleID: DWORD; // Only Win95 (without IE4) and Win NT4, other OS versions might use the registry instead
+        totalEntries: DWORD;   // Only Win95 (without IE4) and Win NT4, other OS versions will use the registry instead and might write information on WM_ENDSESSION for compatibility reasons
+        nextPossibleID: DWORD; // Only Win95 (without IE4) and Win NT4, other OS versions will use the registry instead and might write information on WM_ENDSESSION for compatibility reasons
         recordLength: DWORD;   // 0x181  =  ANSI records
                                // 0x320  =  Unicode records
         totalSize: DWORD;      // sum of all "originalSize" values;
-                               // Only Win95 (without IE4) and Win NT4, other OS versions might use the registry instead
+                               // Only Win95 (without IE4) and Win NT4, other OS versions will use the registry instead and might write information on WM_ENDSESSION for compatibility reasons
       end;
 
 ### ANSI record (Win95, Win98, WinMe)
+
+When a file is deleted, the first byte of `sourceAnsi` will be filled with a zero byte,
+making the zero-terminated string empty. This way, the record is marked as deleted
+and the INFO/INFO2 file does not need to be reorganized.
 
     type
       // Windows 95:      INFO file with TRbInfoRecordA; Folder deletion NOT possible
@@ -53,13 +57,17 @@ INFO and INFO2 is the index file containing all information about the deleted fi
       TRbInfoRecordA = packed record
         sourceAnsi: array[0..MAX_PATH-1] of AnsiChar; // 260 characters (including NUL terminator)
         recordNumber: DWORD;
-        sourceDrive: DWORD; // 0=A, 1=B, 2=C, ...
+        sourceDrive: DWORD; // 0=A, 1=B, 2=C, ..., Z=25, @=26 (@ is the "Network home drive" of the Win95 time)
         deletionTime: FILETIME;
         originalSize: DWORD; // Size occupied on disk. Not the actual file size.
                              // INFO2, for folders: The whole folder size with contents
       end;
 
 ### Unicode record (WinNT4, Win2000, WinXP)
+
+When a file is deleted, the first byte of `sourceAnsi` will be filled with a zero byte,
+making the zero-terminated string empty. This way, the record is marked as deleted
+and the INFO/INFO2 file does not need to be reorganized.
 
     type
       // Windows NT4:   INFO file with TRbInfoRecordW; Folder deletion possible
@@ -68,7 +76,7 @@ INFO and INFO2 is the index file containing all information about the deleted fi
       TRbInfoRecordW = packed record
         sourceAnsi: array[0..MAX_PATH-1] of AnsiChar; // 260 characters (including NUL terminator)
         recordNumber: DWORD;
-        sourceDrive: DWORD; // 0=A, 1=B, 2=C, ...
+        sourceDrive: DWORD; // 0=A, 1=B, 2=C, ..., Z=25, @=26 (@ is the "Network home drive" of the Win95 time)
         deletionTime: FILETIME;
         originalSize: DWORD;
         sourceUnicode: array[0..MAX_PATH-1] of WideChar; // 260 characters (including NUL terminator)
@@ -101,5 +109,5 @@ Beginning with Windows Vista, each deleted file gets its own information record.
         deletionTime: FILETIME;
         (* sourceUnicode: BSTR; *)
         sourceCountChars: DWORD; // including NUL
-        //sourceUnicode: array[0..sourceCountChars+1] of WideChar;
+        //sourceUnicode: array[0..sourceCountChars-1] of WideChar;
       end;
