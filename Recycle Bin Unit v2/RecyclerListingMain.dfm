@@ -54,7 +54,7 @@ object RecyclerListingMainForm: TRecyclerListingMainForm
       TabOrder = 1
     end
     object Button2: TButton
-      Left = 599
+      Left = 615
       Top = 48
       Width = 106
       Height = 33
@@ -77,12 +77,19 @@ object RecyclerListingMainForm: TRecyclerListingMainForm
     object CheckBox2: TCheckBox
       Left = 183
       Top = 6
-      Width = 146
+      Width = 138
       Height = 17
-      Caption = 'Hide orphan Index files'
-      Checked = True
-      State = cbChecked
+      Caption = 'Hide non-existing files'
       TabOrder = 2
+    end
+    object Button3: TButton
+      Left = 592
+      Top = 56
+      Width = 17
+      Height = 21
+      Caption = '...'
+      TabOrder = 5
+      OnClick = Button3Click
     end
   end
   object OpenDialog1: TOpenDialog
@@ -93,7 +100,7 @@ object RecyclerListingMainForm: TRecyclerListingMainForm
     Left = 928
     Top = 48
     Bitmap = {
-      494C01010E001000140010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010E001000040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000004000000001002000000000000040
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

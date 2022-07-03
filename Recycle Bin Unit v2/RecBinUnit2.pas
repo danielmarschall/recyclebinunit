@@ -5,7 +5,7 @@ unit RecBinUnit2 platform;
 // E-MAIL: info@daniel-marschall.de                                               //
 // Web:    www.daniel-marschall.de & www.viathinksoft.de                          //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 30 JUN 2022                                                          //
+// Revision: 02 JUL 2022                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successfully tested with:                                                      //
@@ -55,7 +55,7 @@ uses
   Windows, SysUtils, Classes, ContNrs, ShellAPI, Registry, Messages, Math;
 
 const
-  RECBINUNIT_VERSION = '2022-06-30';
+  RECBINUNIT_VERSION = '2022-07-02';
 
   RECYCLER_CLSID: TGUID = '{645FF040-5081-101B-9F08-00AA002F954E}';
   NULL_GUID:      TGUID = '{00000000-0000-0000-0000-000000000000}';
@@ -816,21 +816,42 @@ procedure TRbRecycleBin.ListItems(list: TObjectList{TRbRecycleBinItem});
   var
     fs: TFileStream;
     infoHdr: TRbInfoHeader;
-    testID: string;
+    vistaId: string;
     wTest: TRbInfoWItem;
     bakPosition: int64;
+    testVistaItem: TRbVistaItem;
   begin
     fs := TFileStream.Create(AFile, fmOpenRead);
     try
       fs.Seek(0, soFromBeginning);
 
+      {$REGION 'First try if it is a Vista index file'}
+      testVistaItem := nil;
       if SameText(copy(ExtractFileName(AFile), 1, 2), '$I') then
       begin
-        testID := copy(testID, 3, Length(testID)-2);
-        list.Add(TRbVistaItem.Create(fs, AFile, testID));
+        vistaId := copy(AFile, 3, Length(AFile)-2);
+        testVistaItem := TRbVistaItem.Create(fs, AFile, vistaId);
       end
       else
       begin
+        vistaId := ''; // manual file that was not named $I..., so we cannot get $R... ID and therefore no physical file!
+        try
+          testVistaItem := TRbVistaItem.Create(fs, AFile, vistaId);
+          if Copy(testVistaItem.Source,2,2) <> ':\' then
+            FreeAndNil(testVistaItem);
+        except
+          testVistaItem := nil;
+        end;
+      end;
+      {$ENDREGION}
+
+      if Assigned(testVistaItem) then
+      begin
+        list.Add(testVistaItem);
+      end
+      else
+      begin
+        fs.Seek(0, soFromBeginning);
         if TolerantReading then
         begin
           // This is a special treatment how to recover data from an INFO/INFO2 file
@@ -850,7 +871,7 @@ procedure TRbRecycleBin.ListItems(list: TObjectList{TRbRecycleBinItem});
               // a ':' at the Unicode string.
               bakPosition := fs.Position;
               wTest := TRbInfoWItem.Create(fs, AFile);
-              if Copy(wTest.SourceUnicode, 2, 1) = ':' then
+              if Copy(wTest.SourceUnicode, 2, 2) = ':\' then
               begin
                 // Yes, it is a valid Unicode record.
                 list.Add(wTest);
@@ -863,11 +884,16 @@ procedure TRbRecycleBin.ListItems(list: TObjectList{TRbRecycleBinItem});
                 list.Add(TRbInfoAItem.Create(fs, AFile));
               end;
             end
-            else
+            else if fs.Position + SizeOf(TRbInfoRecordA) <= fs.Size then
             begin
               // No, there is not enough space left for an Unicode record.
               // So we assume that the following record will be a valid ANSI record.
               list.Add(TRbInfoAItem.Create(fs, AFile));
+            end
+            else
+            begin
+              // Not enough space to read a Ansi record!
+              // Ignore it
             end;
           end;
         end
@@ -1266,8 +1292,8 @@ function TRbDrive.IsFAT: boolean;
 var
   Dummy2: DWORD;
   Dummy3: DWORD;
-  FileSystem: array[0..MAX_PATH] of char;
-  VolumeName: array[0..MAX_PATH] of char;
+  FileSystem: array[0..MAX_PATH-1] of char;
+  VolumeName: array[0..MAX_PATH-1] of char;
   s: string;
 begin
   s := FDriveLetter + DriveDelim + PathDelim; // ohne die Auslagerung in einen String kommt es zu einer AV in ntdll
@@ -1536,7 +1562,7 @@ var
   r1: TRbVistaRecord1;
   r2: TRbVistaRecord2Head;
   r2SourceUnicode: array of WideChar;
-  version: DWORD;
+  version: int64;
   i: Integer;
 resourcestring
   LNG_VISTA_WRONG_FORMAT = 'Invalid Vista index format version %d';
@@ -1614,7 +1640,10 @@ end;
 function TRbVistaItem.GetPhysicalFile: string;
 begin
   result := FIndexFile;
-  result := StringReplace(Result, '$I', '$R', [rfIgnoreCase]);
+  if Pos('$I', Result) = 0 then
+    result := ''
+  else
+    result := StringReplace(Result, '$I', '$R', [rfIgnoreCase]);
 end;
 
 constructor TRbVistaItem.Create(fs: TStream; AIndexFile, AID: string);

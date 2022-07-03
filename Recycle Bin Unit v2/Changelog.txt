@@ -1,6 +1,10 @@
 
 === Changelog RecBinUnit v2 ===
 
+2022-07-02
++ Improved recognition of Vista+ index files which are not named with file name $I...
++ Fixed issues in FORMAT.md
+
 2022-06-30
 + Added support for $Ixxx "Vista" format 2 files (added somewhere in a Windows 10 build)
   The difference towards $Ixxx "Vista" format 1 files is that the filename is not limited to MAX_PATH anymore. (New limit 0xFFFFFFFD)

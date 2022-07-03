@@ -1,7 +1,6 @@
 unit RecBinUnitLowLvl;
 
-// TODO: Gain more information about drive '@' / Homedrive / Netdrive? Win2000 source
-//       + überall verwenden
+// TODO: Gain more information about drive '@' / Homedrive / Netdrive?
 
 interface
 
@@ -10,28 +9,28 @@ uses
 
 type
   PRbInfoHeader = ^TRbInfoHeader;
-  TRbInfoHeader = record
-    format: DWORD;         // Unsure if this is just a version field or some unknown flags...!
-                           // Win95 (without IE4): 00 00 00 00
-                           // Win95 (with IE4):    04 00 00 00
-                           // Win NT4:             02 00 00 00
-                           // Win Me, 2000, XP:    05 00 00 00
-    totalEntries: DWORD;   // Only Win95 (without IE4) and Win NT4, unknown purpose for other OS versions
-    nextPossibleID: DWORD; // Only Win95 (without IE4) and Win NT4, unknown purpose for other OS versions
-    recordLength: DWORD; // 0x181  =  INFO  structure (without Unicode)
-                         // 0x320  =  INFO2 structure (with Unicode)
-    totalSize: DWORD; // sum of all "originalSize" values;
-                      // Only Win95 (without IE4) and Win NT4, unknown purpose for other OS versions
+  TRbInfoHeader = packed record
+    format: DWORD;         // Version of the info file
+                           // Win95 (without IE4):   00 00 00 00
+                           // Win NT4:               02 00 00 00   (Win96/Cairo?)
+                           // Win95 (with IE4), 98:  04 00 00 00
+                           // Win Me, 2000, XP:      05 00 00 00   (NT4+IE4, NT5?)
+    totalEntries: DWORD;   // Only Win95 (without IE4) and Win NT4, other OS versions might use the registry instead
+    nextPossibleID: DWORD; // Only Win95 (without IE4) and Win NT4, other OS versions might use the registry instead
+    recordLength: DWORD;   // 0x181  =  ANSI records
+                           // 0x320  =  Unicode records
+    totalSize: DWORD;      // sum of all "originalSize" values;
+                           // Only Win95 (without IE4) and Win NT4, other OS versions might use the registry instead
   end;
 
 type
   // Windows 95:      INFO file with TRbInfoRecordA; Folder deletion NOT possible
   // Windows 95 +IE4: INFO2 file with TRbInfoRecordA; Folder deletion possible
   PRbInfoRecordA = ^TRbInfoRecordA;
-  TRbInfoRecordA = record
-    sourceAnsi: array[0..MAX_PATH-3] of AnsiChar; // 258 elements
+  TRbInfoRecordA = packed record
+    sourceAnsi: array[0..MAX_PATH-1] of AnsiChar; // 260 characters (including NUL terminator)
     recordNumber: DWORD;
-    sourceDrive: DWORD;
+    sourceDrive: DWORD; // 0=A, 1=B, 2=C, ...
     deletionTime: FILETIME;
     originalSize: DWORD; // Size occupied on disk. Not the actual file size.
                          // INFO2, for folders: The whole folder size with contents
@@ -41,20 +40,19 @@ type
   // Windows NT4:   INFO file with TRbInfoRecordW; Folder deletion possible
   // Windows 2000+: INFO2 file with TRbInfoRecordW; Folder deletion possible
   PRbInfoRecordW = ^TRbInfoRecordW;
-  TRbInfoRecordW = record
-    sourceAnsi: array[0..MAX_PATH-3] of AnsiChar; // 258 elements
+  TRbInfoRecordW = packed record
+    sourceAnsi: array[0..MAX_PATH-1] of AnsiChar; // 260 characters (including NUL terminator)
     recordNumber: DWORD;
-    sourceDrive: DWORD;
+    sourceDrive: DWORD; // 0=A, 1=B, 2=C, ...
     deletionTime: FILETIME;
     originalSize: DWORD;
-    sourceUnicode: array[0..MAX_PATH-3] of WideChar; // 258 elements
-    unknown1: DWORD; // Dummy?
+    sourceUnicode: array[0..MAX_PATH-1] of WideChar; // 260 characters (including NUL terminator)
   end;
 
 type
   // Introduced in Windows Vista
   PRbVistaRecord1 = ^TRbVistaRecord1;
-  TRbVistaRecord1 = record
+  TRbVistaRecord1 = packed record
     version: int64; // Always 01 00 00 00 00 00 00 00
     originalSize: int64;
     deletionTime: FILETIME;
@@ -64,7 +62,7 @@ type
 type
   // Introduced somewhere in a Win10 release
   PRbVistaRecord2Head = ^TRbVistaRecord2Head;
-  TRbVistaRecord2Head = record
+  TRbVistaRecord2Head = packed record
     version: int64; // Always 02 00 00 00 00 00 00 00
     originalSize: int64;
     deletionTime: FILETIME;
@@ -77,7 +75,7 @@ type
   // Windows 95 + Windows NT 4
   // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\BitBucket: PurgeInfo (Binary)
   PRbWin95PurgeInfo = ^TRbWin95PurgeInfo;
-  TRbWin95PurgeInfo = record
+  TRbWin95PurgeInfo = packed record
     cbSize: DWORD;
     bGlobalSettings: BOOL;
     percentDrive: array['A'..'Z'] of WORD; // 0x00..0x64 = 0%..100%

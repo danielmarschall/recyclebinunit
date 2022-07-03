@@ -850,8 +850,8 @@ function _isFAT(drive: char): boolean;
 var
   Dummy2: DWORD;
   Dummy3: DWORD;
-  FileSystem: array[0..MAX_PATH] of char;
-  VolumeName: array[0..MAX_PATH] of char;
+  FileSystem: array[0..MAX_PATH-1] of char;
+  VolumeName: array[0..MAX_PATH-1] of char;
   s: string;
 begin
   result := false;

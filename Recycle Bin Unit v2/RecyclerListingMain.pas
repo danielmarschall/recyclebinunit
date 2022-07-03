@@ -17,10 +17,12 @@ type
     LabeledEdit1: TLabeledEdit;
     ImageList1: TImageList;
     CheckBox2: TCheckBox;
+    Button3: TButton;
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure TreeView1DblClick(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
   private
     localRecyclersNode: TTreeNode;
     individualRecyclersNode: TTreeNode;
@@ -39,6 +41,14 @@ uses
 // TODO: SID Namen auflösen und dementsprechend anzeigen
 // TODO: zu jedem element mehr informationen anzeigen, nicht nur den ursprungsnamen
 // TODO: Einstellungen usw anzeigen, so wie im alten Demo
+
+const
+  ICON_FILE = 0;
+  ICON_TREEVIEW = 2;
+  ICON_BIN = 4;
+  ICON_DRIVE = 6;
+  ICON_UNKNOWN = 8;
+  ICON_FOLDER = 10;
 
 procedure TRecyclerListingMainForm.Button1Click(Sender: TObject);
 var
@@ -77,7 +87,7 @@ begin
         nDrive := TreeView1.Items.AddChildObject(localRecyclersNode, Format(S_DRIVE, [drive.DriveLetter])+': ' + GUIDToString(drive.VolumeGUID), drive)
       else
         nDrive := TreeView1.Items.AddChildObject(localRecyclersNode, Format(S_DRIVE, [drive.DriveLetter])+':', drive);
-      nDrive.ImageIndex := 6;
+      nDrive.ImageIndex := ICON_DRIVE;
       nDrive.SelectedIndex := nDrive.ImageIndex;
 
       bins.Clear;
@@ -90,7 +100,7 @@ begin
         bin := bins.Items[iBin] as TRbRecycleBin;
 
         nBin := TreeView1.Items.AddChildObject(nDrive, bin.FileOrDirectory, bin);
-        nBin.ImageIndex := 4;
+        nBin.ImageIndex := ICON_BIN;
         nBin.SelectedIndex := nBin.ImageIndex;
 
         items.Clear;
@@ -108,11 +118,11 @@ begin
           nItem := TreeView1.Items.AddChildObject(nBin, sCaption, item);
 
           if FileExists(item.PhysicalFile) then
-            nItem.ImageIndex := 0
+            nItem.ImageIndex := ICON_FILE
           else if DirectoryExists(item.PhysicalFile) then
-            nItem.ImageIndex := 10 // TODO: Feature: Read folder contents and display them in this treeview. (Also change icon to "open folder")
+            nItem.ImageIndex := ICON_FOLDER // TODO: Feature: Read folder contents and display them in this treeview. (Also change icon to "open folder")
           else
-            nItem.ImageIndex := 8;
+            nItem.ImageIndex := ICON_UNKNOWN;
           nItem.SelectedIndex := nItem.ImageIndex;
         end;
       end;
@@ -141,6 +151,8 @@ begin
   bin := TRbRecycleBin.Create(LabeledEdit1.Text);
 
   nBin := TreeView1.Items.AddChildObject(individualRecyclersNode, bin.FileOrDirectory, bin);
+  nBin.ImageIndex := ICON_BIN;
+  nBin.SelectedIndex := nBin.ImageIndex;
   individualRecyclersNode.Expand(false);
 
   items := TObjectList.Create(false);
@@ -160,11 +172,11 @@ begin
       nItem := TreeView1.Items.AddChildObject(nBin, sCaption, item);
 
       if FileExists(item.PhysicalFile) then
-        nItem.ImageIndex := 0
+        nItem.ImageIndex := ICON_FILE
       else if DirectoryExists(item.PhysicalFile) then
-        nItem.ImageIndex := 10 // TODO: Feature: Read folder contents and display them in this treeview. (Also change icon to "open folder")
+        nItem.ImageIndex := ICON_FOLDER // TODO: Feature: Read folder contents and display them in this treeview. (Also change icon to "open folder")
       else
-        nItem.ImageIndex := 8;
+        nItem.ImageIndex := ICON_UNKNOWN;
       nItem.SelectedIndex := nItem.ImageIndex;
     end;
   finally
@@ -174,17 +186,23 @@ begin
   nBin.Expand(false);
 end;
 
+procedure TRecyclerListingMainForm.Button3Click(Sender: TObject);
+begin
+  if OpenDialog1.Execute then
+    LabeledEdit1.Text := OpenDialog1.FileName;
+end;
+
 procedure TRecyclerListingMainForm.FormShow(Sender: TObject);
 resourcestring
   S_LOCAL_RECYCLE_BINS = 'Local recycle bins';
   S_MANUAL_RECYCLE_BINS ='Manually added recycle bins';
 begin
   localRecyclersNode := TreeView1.Items.Add(nil, S_LOCAL_RECYCLE_BINS);
-  localRecyclersNode.ImageIndex := 2;
+  localRecyclersNode.ImageIndex := ICON_TREEVIEW;
   localRecyclersNode.SelectedIndex := localRecyclersNode.ImageIndex;
 
   individualRecyclersNode := TreeView1.Items.Add(nil, S_MANUAL_RECYCLE_BINS);
-  individualRecyclersNode.ImageIndex := 2;
+  individualRecyclersNode.ImageIndex := ICON_TREEVIEW;
   individualRecyclersNode.SelectedIndex := individualRecyclersNode.ImageIndex;
 end;
 
@@ -192,7 +210,7 @@ procedure TRecyclerListingMainForm.TreeView1DblClick(Sender: TObject);
 var
   item: TRbRecycleBinItem;
 begin
-  if TreeView1.Selected.ImageIndex = 0 then
+  if TreeView1.Selected.ImageIndex = ICON_FILE then
   begin
     // File
     item := TRbRecycleBinItem(TreeView1.Selected.Data);
@@ -200,7 +218,7 @@ begin
     // TODO: Maybe we should add a feature to drag'n'drop a file/folder out of RecycleBinUnit into the explorer (With options copy or move, depending on the ShiftState) 
     ShellExecute(Handle, 'open', PChar(item.PhysicalFile), '', '', SW_NORMAL);
   end;
-  if TreeView1.Selected.ImageIndex = 10 then
+  if TreeView1.Selected.ImageIndex = ICON_FOLDER then
   begin
     // Folder
     item := TRbRecycleBinItem(TreeView1.Selected.Data);
