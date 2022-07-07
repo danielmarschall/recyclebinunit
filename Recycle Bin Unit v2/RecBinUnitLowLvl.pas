@@ -28,7 +28,7 @@ type
   TRbInfoRecordA = packed record
     sourceAnsi: array[0..MAX_PATH-1] of AnsiChar; // 260 characters (including NUL terminator)
     recordNumber: DWORD;
-    sourceDrive: DWORD; // 0=A, 1=B, 2=C, ..., Z=25, @=26 (@ is the "Network home drive" of the Win95 time)
+    sourceDrive: DWORD; // 0=A, 1=B, 2=C, ..., 25=Z, 26=@ (this is the "Network home drive" of the Win95 days)
     deletionTime: FILETIME;
     originalSize: DWORD; // Size occupied on disk. Not the actual file size.
                          // INFO2, for folders: The whole folder size with contents
@@ -41,7 +41,7 @@ type
   TRbInfoRecordW = packed record
     sourceAnsi: array[0..MAX_PATH-1] of AnsiChar; // 260 characters (including NUL terminator)
     recordNumber: DWORD;
-    sourceDrive: DWORD; // 0=A, 1=B, 2=C, ..., Z=25, @=26 (@ is the "Network home drive" of the Win95 times)
+    sourceDrive: DWORD; // 0=A, 1=B, 2=C, ..., 25=Z, 26=@ (this is the "Network home drive" of the Win95 days)
     deletionTime: FILETIME;
     originalSize: DWORD;
     sourceUnicode: array[0..MAX_PATH-1] of WideChar; // 260 characters (including NUL terminator)

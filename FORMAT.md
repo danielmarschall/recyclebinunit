@@ -50,7 +50,7 @@ Windows 95 +IE4: INFO2 file with ANSI record; Folder deletion possible
 |--------------|------------|-----------------|-------------|
 | 0000         | 260        | char[MAX_PATH]  | Original file name and path in ANSI characters. 260 characters (including NUL terminator). Empty string if file was deleted. | 
 | 0104         | 4          | DWORD           | Record number | 
-| 0108         | 4          | DWORD           | Source drive; 0=A, 1=B, 2=C, ..., Z=25, @=26 (@ is the "Network home drive" of the Win95 times) | 
+| 0108         | 4          | DWORD           | Source drive number<br>0=A, 1=B, 2=C, ..., 25=Z<br>26=@ (this is the "Network home drive" of the Win95 days) | 
 | 010C         | 8          | FILETIME        | Deletion time | 
 | 0114         | 4          | DWORD           | Size occupied on disk. Not the actual file size.<br>INFO2, for folders: The whole folder size with contents | 
 
@@ -67,7 +67,7 @@ Windows 2000+: INFO2 file with Unicode record; Folder deletion possible
 |--------------|------------|-----------------|-------------|
 | 0000         | 260        | char[MAX_PATH]  | Original file name and path in ANSI characters. 260 characters (including NUL terminator). Empty string if file was deleted. | 
 | 0104         | 4          | DWORD           | Record number | 
-| 0108         | 4          | DWORD           | Source drive; 0=A, 1=B, 2=C, ..., Z=25, @=26 (@ is the "Network home drive" of the Win95 times) | 
+| 0108         | 4          | DWORD           | Source drive number<br>0=A, 1=B, 2=C, ..., 25=Z<br>26=@ (this is the "Network home drive" of the Win95 days) | 
 | 010C         | 8          | FILETIME        | Deletion time | 
 | 0114         | 4          | DWORD           | Original size |
 | 0118         | 520        | wchar[MAX_PATH] | Original file name and path in Unicode characters. 260 characters (including NUL terminator) | 
