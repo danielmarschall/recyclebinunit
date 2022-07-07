@@ -77,9 +77,9 @@ N4
 	"Nuke on delete" setting in a bitmask (7..0)
 	Bit 0 (LSB) = Flag for device Y
 	Bit 1       = Flag for device Z
-	Bit 2       = Flag for "homedrive"
+	Bit 2       = Flag for network home drive
 	Bit 3       = Flag for global setting
-	Bit 4       = Unknown
-	Bit 5       = Unknown
-	Bit 6       = Unknown
-	Bit 7 (MSB) = Unknown
+	Bit 4       = Unused
+	Bit 5       = Unused
+	Bit 6       = Unused
+	Bit 7 (MSB) = Unused

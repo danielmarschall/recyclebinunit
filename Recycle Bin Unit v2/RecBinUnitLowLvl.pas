@@ -15,7 +15,7 @@ type
                            // Win Me, 2000, XP:      05 00 00 00   (NT4+IE4, NT5?)
     totalEntries: DWORD;   // Only Win95 (without IE4) and Win NT4, other OS versions will use the registry instead and might write information on WM_ENDSESSION for compatibility reasons
     nextPossibleID: DWORD; // Only Win95 (without IE4) and Win NT4, other OS versions will use the registry instead and might write information on WM_ENDSESSION for compatibility reasons
-    recordLength: DWORD;   // 0x181  =  ANSI records
+    recordLength: DWORD;   // 0x118  =  ANSI records
                            // 0x320  =  Unicode records
     totalSize: DWORD;      // sum of all "originalSize" values;
                            // Only Win95 (without IE4) and Win NT4, other OS versions will use the registry instead and might write information on WM_ENDSESSION for compatibility reasons
@@ -64,13 +64,12 @@ type
     version: int64; // Always 02 00 00 00 00 00 00 00
     originalSize: int64;
     deletionTime: FILETIME;
-    (* sourceUnicode: BSTR; *)
     sourceCountChars: DWORD; // including NUL
     //sourceUnicode: array[0..sourceCountChars-1] of WideChar;
   end;
 
 type
-  // Windows 95 (tested with 4.00.950 and Win95b) + Windows NT 4
+  // Windows 95 (tested with 4.00.180 and above) + Windows NT 4
   // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\explorer\BitBucket: PurgeInfo (Binary)
   // TODO: also explain this in FORMAT.md ?
   PRbWin95PurgeInfo = ^TRbWin95PurgeInfo;
@@ -88,7 +87,7 @@ type
                              // Bit 26: "Network home drive"
                              // Bit 27: Global
                              // Bit 28..31 (MSB) unused
-    dummy: DWORD; // "dummy to force a new size" ?! (TODO: was there a Windows version that had a smaller size (0x44), i.e. a different version of this record?)
+    dummy: DWORD; // "dummy to force a new size" ?! But the 0x48 format was already in Win95 beta build 180, which is the first known build with this recycle bin implementation!
   end;
 
 implementation

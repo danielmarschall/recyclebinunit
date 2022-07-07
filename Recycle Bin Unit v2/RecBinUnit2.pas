@@ -894,7 +894,7 @@ procedure TRbRecycleBin.ListItems(list: TObjectList{TRbRecycleBinItem});
             end
             else
             begin
-              // Not enough space to read a Ansi record!
+              // Not enough space to read a ANSI record!
               // Ignore it
             end;
           end;
