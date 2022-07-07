@@ -5,7 +5,7 @@ unit RecBinUnit2 platform;
 // E-MAIL: info@daniel-marschall.de                                               //
 // Web:    www.daniel-marschall.de & www.viathinksoft.de                          //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 03 JUL 2022                                                          //
+// Revision: 07 JUL 2022                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successfully tested with:                                                      //
@@ -55,7 +55,7 @@ uses
   Windows, SysUtils, Classes, ContNrs, ShellAPI, Registry, Messages, Math;
 
 const
-  RECBINUNIT_VERSION = '2022-07-03';
+  RECBINUNIT_VERSION = '2022-07-07';
 
   RECYCLER_CLSID: TGUID = '{645FF040-5081-101B-9F08-00AA002F954E}';
   NULL_GUID:      TGUID = '{00000000-0000-0000-0000-000000000000}';
@@ -115,7 +115,7 @@ type
     procedure ReadFromStream(stream: TStream); override;
     function GetPhysicalFile: string; override;
   public
-    constructor Create(fs: TStream; AIndexFile: string);
+    constructor Create(fs: TStream; AIndexFile: string); reintroduce;
     function DeleteFile: boolean; override;
     // TODO: function RecoverFile: boolean; override;
     // TODO: function OpenFile: boolean; override;
@@ -126,7 +126,7 @@ type
     procedure ReadFromStream(stream: TStream); override;
     function GetPhysicalFile: string; override;
   public
-    constructor Create(fs: TStream; AIndexFile: string);
+    constructor Create(fs: TStream; AIndexFile: string); reintroduce;
     function DeleteFile: boolean; override;
     // TODO: function RecoverFile: boolean; override;
     // TODO: function OpenFile: boolean; override;
@@ -137,7 +137,7 @@ type
     procedure ReadFromStream(stream: TStream); override;
     function GetPhysicalFile: string; override;
   public
-    constructor Create(fs: TStream; AIndexFile, AID: string);
+    constructor Create(fs: TStream; AIndexFile, AID: string); reintroduce;
     function DeleteFile: boolean; override;
     // TODO: function RecoverFile: boolean; override;
     // TODO: function OpenFile: boolean; override;
@@ -1419,7 +1419,10 @@ begin
   if r.sourceAnsi[0] = #0 then
   begin
     FRemovedEntry := true;
-    r.sourceAnsi[0] := AnsiChar(FSourceDrive);
+    if (r.sourceDrive = 26) and (r.sourceAnsi[1] = '\') then
+      r.sourceAnsi[0] := '\'
+    else
+      r.sourceAnsi[0] := AnsiChar(FSourceDrive);
   end;
 
   FSourceAnsi := r.sourceAnsi;
@@ -1491,6 +1494,12 @@ begin
   begin
     FRemovedEntry := true;
     r.sourceAnsi[0] := AnsiChar(r.sourceUnicode[0]);
+    (*
+    if (r.sourceDrive = 26) and (r.sourceAnsi[1] = '\') then
+      r.sourceAnsi[0] := '\'
+    else
+      r.sourceAnsi[0] := AnsiChar(FSourceDrive);
+    *)
   end;
 
   FSourceAnsi := r.sourceAnsi;
