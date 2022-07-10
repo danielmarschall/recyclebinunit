@@ -1,7 +1,7 @@
 
 # Windows Recycle Bin internal format
 
-## Locations
+## Locations of the index files
 
 ### FAT drives:
 
@@ -9,7 +9,7 @@
 - Windows 95+IE4, 98SE:	`C:\RECYCLED\INFO2` (with ANSI records, folder deletion is possible, format `04 00 00 00`)
 - Windows Me:		`C:\RECYCLED\INFO2` (with ANSI records, folder deletion is possible, format `05 00 00 00`)
 - Windows Vista+:	`C:\$RECYCLE.BIN\$I...`
-- Windows 95 (Beta 58s)	`<WinDir>\DESKTOP\RECYCLE.BIN` (a normal folder with the deleted files. No index, no renamed files). In beta build 122, the recycle bin was removed and re-added in beta build 180 with the INFO-format we know from the RTM release.
+- Windows 95 (Beta 58s)	`C:\CHICAGO\DESKTOP\RECYCLE.BIN` (a normal folder with the deleted files. There are no index files and deleted files won't get renamed). In beta build 122, the recycle bin was removed and re-added in beta build 180 with the INFO-format we know from the RTM release.
 
 ### NTFS drives:
 
@@ -39,11 +39,8 @@ INFO and INFO2 is the index file containing all information about the deleted fi
 
 ### ANSI record (Win95, Win98, WinMe)
 
-When a file is deleted, the first byte of the original filename will be set to a zero byte,
-making the zero-terminated string empty. This way, the record is marked as deleted
-and the INFO/INFO2 file does not need to be reorganized.
-
 Windows 95:      INFO file with ANSI record; Folder deletion NOT possible
+
 Windows 95 +IE4: INFO2 file with ANSI record; Folder deletion possible
 
 | offset (hex) | size (dec) |  type           | description |
@@ -52,15 +49,12 @@ Windows 95 +IE4: INFO2 file with ANSI record; Folder deletion possible
 | 0104         | 4          | DWORD           | Record number | 
 | 0108         | 4          | DWORD           | Source drive number<br>0=A, 1=B, 2=C, ..., 25=Z<br>26=@ (this is the "Network home drive" of the Win95 days) | 
 | 010C         | 8          | FILETIME        | Deletion time | 
-| 0114         | 4          | DWORD           | Size occupied on disk. Not the actual file size.<br>INFO2, for folders: The whole folder size with contents | 
+| 0114         | 4          | DWORD           | Original file size, rounded to the next cluster (see note below).<br>INFO2, for folders: The whole folder size with contents | 
 
 ### Unicode record (WinNT4, Win2000, WinXP)
 
-When a file is deleted, the first byte of the original filename will be set to a zero byte,
-making the zero-terminated string empty. This way, the record is marked as deleted
-and the INFO/INFO2 file does not need to be reorganized.
-
 Windows NT4:   INFO file with Unicode record; Folder deletion possible
+
 Windows 2000+: INFO2 file with Unicode record; Folder deletion possible
 
 | offset (hex) | size (dec) |  type           | description |
@@ -69,8 +63,28 @@ Windows 2000+: INFO2 file with Unicode record; Folder deletion possible
 | 0104         | 4          | DWORD           | Record number | 
 | 0108         | 4          | DWORD           | Source drive number<br>0=A, 1=B, 2=C, ..., 25=Z<br>26=@ (this is the "Network home drive" of the Win95 days) | 
 | 010C         | 8          | FILETIME        | Deletion time | 
-| 0114         | 4          | DWORD           | Original size |
+| 0114         | 4          | DWORD           | Original file size, rounded to the next cluster (see note below) |
 | 0118         | 520        | wchar[MAX_PATH] | Original file name and path in Unicode characters. 260 characters (including NUL terminator) | 
+
+### Sizes
+
+The original size is inteded to be rounded to the next cluster, so this should be the size on the disk, not the size of the actual file.
+
+However, my test system (Win98, INFO2 record) showed a weird behavior:
+Explorer shows "size used" as 4 KiB (e.g. 4096 bytes used, which is my file system cluster size),
+but when the file was moved to the recycle bin, the INFO2 record stores 32 KiB.
+The GUI displays the file as 1 KB (it must get that number from the data file, not from the index file).
+
+### Deleted files
+
+For Windows 95/NT4 with IE4 integration, and all OS versions above:
+When a file is removed from the recycle bin (i.e. deleted or recovered),
+the first byte of the original filename will be set to a zero byte,
+making the zero-terminated string empty. This way, the record is marked as deleted
+and the INFO/INFO2 file does not need to be reorganized like it was the case for Win95/NT4 without IE4.
+
+When the recycle bin is emptied (NOT if all files were manually deleted or recovered),
+then the INFO und INFO2 files are removed.
 
 ## $I... files of Windows Vista and above
 
