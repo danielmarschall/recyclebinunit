@@ -75,13 +75,15 @@ Explorer shows "size used" as 4 KiB (e.g. 4096 bytes used, which is my file syst
 but when the file was moved to the recycle bin, the INFO2 record stores 32 KiB.
 The GUI displays the file as 1 KB (it must get that number from the data file, not from the index file).
 
+WinNT4 does it correctly, setting the size to 0x200 (512 Byte), which is the file system cluster size.
+
 ### Deleted files
 
-For Windows 95/NT4 with IE4 integration, and all OS versions above:
+For Windows 95 with IE4 integration, and all OS versions above:
 When a file is removed from the recycle bin (i.e. deleted or recovered),
 the first byte of the original filename will be set to a zero byte,
 making the zero-terminated string empty. This way, the record is marked as deleted
-and the INFO/INFO2 file does not need to be reorganized like it was the case for Win95/NT4 without IE4.
+and the INFO/INFO2 file does not need to be reorganized like it was the case for WinNT4 and Win95 without IE4.
 
 When the recycle bin is emptied (NOT if all files were manually deleted or recovered),
 then the INFO und INFO2 files are removed.
