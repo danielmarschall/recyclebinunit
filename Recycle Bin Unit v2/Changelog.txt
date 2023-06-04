@@ -1,6 +1,11 @@
 
 === Changelog RecBinUnit v2 ===
 
+2023-04-06
++ Fixed a bug where a Vista data file ($R) was evaluated as index file ($I). Probably a bug in Delphi/WinAPI.
++ Demo application: Wait indicator added
++ Demo application: Tree can now be saved as TXT file
+
 2022-07-03
 + Added support for "Network home drives" recycle bin (from Win95 days)
 

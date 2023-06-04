@@ -91,6 +91,15 @@ object RecyclerListingMainForm: TRecyclerListingMainForm
       TabOrder = 5
       OnClick = Button3Click
     end
+    object Button4: TButton
+      Left = 736
+      Top = 48
+      Width = 137
+      Height = 33
+      Caption = 'Save tree to TXT file'
+      TabOrder = 6
+      OnClick = Button4Click
+    end
   end
   object OpenDialog1: TOpenDialog
     Left = 928
@@ -634,5 +643,12 @@ object RecyclerListingMainForm: TRecyclerListingMainForm
       E007E487B9FF99FFE00FE18FBFFF8247E01FE01F048F008FE03FE03F07FF33FF
       FFFFFFFF07FF47FFFFFFFFFF9FFF9FFF00000000000000000000000000000000
       000000000000}
+  end
+  object SaveDialog1: TSaveDialog
+    DefaultExt = '.txt'
+    Filter = 'Text files (*.txt)|*.txt|All files (*.*)|*.*'
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
+    Left = 928
+    Top = 112
   end
 end

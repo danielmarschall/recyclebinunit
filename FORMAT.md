@@ -3,7 +3,7 @@
 
 ## Locations of the index files
 
-### FAT drives:
+### FAT drives
 
 - Windows 95 native:	`C:\RECYCLED\INFO` (with ANSI records, folder deletion is NOT possible, format `00 00 00 00`)
 - Windows 95+IE4, 98SE:	`C:\RECYCLED\INFO2` (with ANSI records, folder deletion is possible, format `04 00 00 00`)
@@ -11,7 +11,7 @@
 - Windows Vista+:	`C:\$RECYCLE.BIN\$I...`
 - Windows 95 (Beta 58s)	`C:\CHICAGO\DESKTOP\RECYCLE.BIN` (a normal folder with the deleted files. There are no index files and deleted files won't get renamed). In beta build 122, the recycle bin was removed and re-added in beta build 180 with the INFO-format we know from the RTM release.
 
-### NTFS drives:
+### NTFS drives
 
 - Windows NT4:		`C:\RECYCLER\<UserSID>\INFO` (with Unicode records, folder deletion is possible, format `02 00 00 00`)
 - Windows 2000, XP:	`C:\RECYCLER\<UserSID>\INFO2` (with Unicode records, folder deletion is possible, format `05 00 00 00`)

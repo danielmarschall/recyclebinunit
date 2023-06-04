@@ -5,7 +5,7 @@ unit RecBinUnit2 platform;
 // E-MAIL: info@daniel-marschall.de                                               //
 // Web:    www.daniel-marschall.de & www.viathinksoft.de                          //
 ////////////////////////////////////////////////////////////////////////////////////
-// Revision: 07 JUL 2022                                                          //
+// Revision: 04 JUN 2023                                                          //
 // This unit is freeware, but please link to my website if you are using it!      //
 ////////////////////////////////////////////////////////////////////////////////////
 // Successfully tested with:                                                      //
@@ -55,7 +55,7 @@ uses
   Windows, SysUtils, Classes, ContNrs, ShellAPI, Registry, Messages, Math;
 
 const
-  RECBINUNIT_VERSION = '2022-07-07';
+  RECBINUNIT_VERSION = '2023-06-04';
 
   RECYCLER_CLSID: TGUID = '{645FF040-5081-101B-9F08-00AA002F954E}';
   NULL_GUID:      TGUID = '{00000000-0000-0000-0000-000000000000}';
@@ -930,6 +930,7 @@ procedure TRbRecycleBin.ListItems(list: TObjectList{TRbRecycleBinItem});
     end;
   end;
 
+  // TODO: Nice would be some progress callback function
   procedure _HandleVistaDir(ADirectory: string);
   var
     SR: TSearchRec;
@@ -938,19 +939,25 @@ procedure TRbRecycleBin.ListItems(list: TObjectList{TRbRecycleBinItem});
   begin
     ADirectory := IncludeTrailingPathDelimiter(ADirectory);
 
-    if FindFirst(ADirectory + '$I*', faAnyFile, SR) = 0 then
+    //if FindFirst(ADirectory + '$I*', faAnyFile, SR) = 0 then
+    if FindFirst(ADirectory + '*', faAnyFile, SR) = 0 then
     begin
       repeat
-        id := sr.Name;
-        { id := ChangeFileExt(id, ''); }  // Removed code: We keep the file extention as part of the ID, because we do not know if the ID is otherwise unique
-        id := Copy(id, 3, Length(id)-2);
+        // FindFirst filter '$I*' finds the file '$RJK3R4P.~43~' and '$RJB99A3.~55~' (yes, $R !!!) Why?!
+        // ... so, we just filter for '*' and try to find the '$I*' files ourselves...
+        if UpperCase(Copy(sr.Name,1,2)) = '$I' then
+        begin
+          id := sr.Name;
+          { id := ChangeFileExt(id, ''); }  // Removed code: We keep the file extention as part of the ID, because we do not know if the ID is otherwise unique
+          id := Copy(id, 3, Length(id)-2);
 
-        fs := TFileStream.Create(ADirectory+sr.Name, fmOpenRead);
-        try
-          fs.Seek(0, soFromBeginning);
-          list.Add(TRbVistaItem.Create(fs, ADirectory+sr.Name, id));
-        finally
-          FreeAndNil(fs);
+          fs := TFileStream.Create(ADirectory+sr.Name, fmOpenRead);
+          try
+            fs.Seek(0, soFromBeginning);
+            list.Add(TRbVistaItem.Create(fs, ADirectory+sr.Name, id));
+          finally
+            FreeAndNil(fs);
+          end;
         end;
       until FindNext(SR) <> 0;
     end;
@@ -1581,14 +1588,14 @@ var
   r1: TRbVistaRecord1;
   r2: TRbVistaRecord2Head;
   r2SourceUnicode: array of WideChar;
-  version: int64;
+  ver: int64;
   i: Integer;
 resourcestring
-  LNG_VISTA_WRONG_FORMAT = 'Invalid Vista index format version %d';
+  LNG_VISTA_WRONG_FORMAT = 'Invalid Vista index format version %d at file %s';
 begin
-  stream.ReadBuffer(version, SizeOf(version));
+  stream.ReadBuffer(ver, SizeOf(ver));
 
-  if version = 1 then
+  if ver = 1 then
   begin
     stream.Seek(0, soBeginning);
     stream.ReadBuffer(r1, SizeOf(r1));
@@ -1608,7 +1615,7 @@ begin
     FDeletionTime := FileTimeToDateTime(r1.deletionTime);
     FOriginalSize := r1.originalSize;
   end
-  else if version = 2 then
+  else if ver = 2 then
   begin
     stream.Seek(0, soBeginning);
     stream.ReadBuffer(r2, SizeOf(r2));
@@ -1634,7 +1641,7 @@ begin
   end
   else
   begin
-    raise Exception.CreateFmt(LNG_VISTA_WRONG_FORMAT, [version]);
+    raise Exception.CreateFmt(LNG_VISTA_WRONG_FORMAT, [ver, FID]);
   end;
 
   // Remove #0 at the end. There are some bugs where #0 is added to ANSI/Unicode read paths?! (probably in the ReadVista stuff)
@@ -1668,9 +1675,9 @@ end;
 constructor TRbVistaItem.Create(fs: TStream; AIndexFile, AID: string);
 begin
   inherited Create;
-  ReadFromStream(fs);
   FIndexFile := AIndexFile;
   FID := AID;
+  ReadFromStream(fs);
 end;
 
 { TRecycleBinManager }
