@@ -97,7 +97,7 @@ Beginning with Windows Vista, each deleted file gets its own information record.
 | offset (hex) | size (dec) |  type           | description |
 |--------------|------------|-----------------|-------------|
 | 0000         | 8          | int64           | Version, always `01 00 00 00 00 00 00 00` |
-| 0008         | 8          | uint64          | Original size | 
+| 0008         | 8          | int64           | Original size | 
 | 0010         | 8          | FILETIME        | Deletion time | 
 | 0018         | 520        | wchar[MAX_PATH] | Original file name and path in Unicode characters. 260 characters (including NUL terminator) | 
 
@@ -106,7 +106,7 @@ Beginning with Windows Vista, each deleted file gets its own information record.
 | offset (hex) | size (dec) |  type           | description |
 |--------------|------------|-----------------|-------------|
 | 0000         | 8          | int64           | Version, always `02 00 00 00 00 00 00 00` |
-| 0008         | 8          | uint64          | Original size | 
+| 0008         | 8          | int64           | Original size | 
 | 0010         | 8          | FILETIME        | Deletion time | 
 | 0018         | 4          | DWORD           | Original file name and path: Count of Unicode characters, including NUL terminator | 
 | 001C         | 2*n        | wchar[]         | Original file name and path: Zero terminated Unicode string |
