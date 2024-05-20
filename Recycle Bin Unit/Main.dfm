@@ -145,7 +145,7 @@ object MainForm: TMainForm
     Top = 416
   end
   object saveDialog: TSaveDialog
-    DefaultExt = '.txt'
+    DefaultExt = 'txt'
     Filter = 'Text files (*.txt)|*.txt|All files (*.*)|*.*'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
     Left = 560

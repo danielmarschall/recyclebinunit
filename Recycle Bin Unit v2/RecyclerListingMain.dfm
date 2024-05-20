@@ -645,7 +645,7 @@ object RecyclerListingMainForm: TRecyclerListingMainForm
       000000000000}
   end
   object SaveDialog1: TSaveDialog
-    DefaultExt = '.txt'
+    DefaultExt = 'txt'
     Filter = 'Text files (*.txt)|*.txt|All files (*.*)|*.*'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
     Left = 928

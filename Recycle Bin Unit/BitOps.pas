@@ -152,7 +152,7 @@ type
 
 // Lookup tables to avoid calculation each time
 const
-  AllSetBitsBytes: array[TBytePos] of int64 =
+  AllSetBitsBytes: array[TBytePos] of uint64 =
    ($00000000000000FF,
     $000000000000FFFF,
     $0000000000FFFFFF,
@@ -162,7 +162,7 @@ const
     $00FFFFFFFFFFFFFF,
     $FFFFFFFFFFFFFFFF);
 
-  AllSetBitsNibbles: array[THexNibblePos] of int64 =
+  AllSetBitsNibbles: array[THexNibblePos] of uint64 =
    ($000000000000000F,
     $00000000000000FF,
     $0000000000000FFF,
@@ -180,7 +180,7 @@ const
     $0FFFFFFFFFFFFFFF,
     $FFFFFFFFFFFFFFFF);
 
-  AllSetBitsNibble: array[THexNibblePos] of int64 =
+  AllSetBitsNibble: array[THexNibblePos] of uint64 =
    ($000000000000000F,
     $00000000000000F0,
     $0000000000000F00,
@@ -221,7 +221,7 @@ const
   // be max at $80 (128).
   // Manual calculation (not 64 bit useable) would be
   // result := Math.Floor(Math.Power(2, ABit));
-  SingleBitArray: array[T64BitPos] of int64 =
+  SingleBitArray: array[T64BitPos] of uint64 =
    ($0000000000000001, $0000000000000002, $0000000000000004, $0000000000000008,
     $0000000000000010, $0000000000000020, $0000000000000040, $0000000000000080,
     $0000000000000100, $0000000000000200, $0000000000000400, $0000000000000800,
@@ -272,7 +272,7 @@ const
   // If ABit in [16..23] => 3 Bytes used => (256^3-1) = $FF FF FF
   // If ABit in [24..31] => 4 Bytes used => (256^3-1) = $FF FF FF FF
   // ...
-  SingleBitArrayDynamicInversed: array[T64BitPos] of int64 =
+  SingleBitArrayDynamicInversed: array[T64BitPos] of uint64 =
    ($00000000000000FE, $00000000000000FD, $00000000000000FB, $00000000000000F7,
     $00000000000000EF, $00000000000000DF, $00000000000000BF, $000000000000007F,
     $000000000000FEFF, $000000000000FDFF, $000000000000FBFF, $000000000000F7FF,
@@ -310,7 +310,7 @@ const
   // Manual calculation (not 64 bit useable) would be
   // result := NOT GetSingleBit(ABit)
   //
-  SingleBitArrayInversed: array[T64BitPos] of int64 =
+  SingleBitArrayInversed: array[T64BitPos] of uint64 =
    ($FFFFFFFFFFFFFFFE, $FFFFFFFFFFFFFFFD, $FFFFFFFFFFFFFFFB, $FFFFFFFFFFFFFFF7,
     $FFFFFFFFFFFFFFEF, $FFFFFFFFFFFFFFDF, $FFFFFFFFFFFFFFBF, $FFFFFFFFFFFFFF7F,
     $FFFFFFFFFFFFFEFF, $FFFFFFFFFFFFFDFF, $FFFFFFFFFFFFFBFF, $FFFFFFFFFFFFF7FF,
