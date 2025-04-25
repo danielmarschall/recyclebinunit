@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls, ExtCtrls, ImgList;
+  Dialogs, StdCtrls, ComCtrls, ExtCtrls, ImgList, System.ImageList, Vcl.Mask;
 
 type
   TRecyclerListingMainForm = class(TForm)

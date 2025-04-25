@@ -2234,7 +2234,6 @@ var
   rbuf: array[0..255] of byte;
 begin
   PSHGetSettings := nil;
-  result := false; // Avoid warning message
 
   RBHandle := LoadLibrary(shell32);
   if(RBHandle <> 0) then
