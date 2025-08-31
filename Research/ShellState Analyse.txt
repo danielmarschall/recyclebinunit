@@ -2,6 +2,11 @@ Analysis of "Recycler confirm dialog" setting
 Analysis of Byte #5 of
 HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\ShellState
 
+
+=> see https://docs.microsoft.com/en-us/windows/desktop/api/shlobj_core/ns-shlobj_core-shellstatea
+3rd bit = fNoConfirmRecycle
+
+
 [ ]	Unchecked
 [X]	Checked
 [X]1st	Checked and never changed settings of recycler
